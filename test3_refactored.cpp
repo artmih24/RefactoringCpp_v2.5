@@ -4,14 +4,13 @@ using namespace std;
  
 class MPEI_Stud {  
 public:  
-string firstName,  
-lastName,  
-middleName,  
-university,  
-faculty,  
-department,  
-group;  
- 
+string firstName;  
+string lastName;  
+string middleName;  
+string university;  
+string faculty;  
+string department;  
+string group;  
 MPEI_Stud(string firstName, string lastName, string middleName, string faculty, string department, string group) {  
 this->firstName = firstName;  
 this->lastName = lastName;  
@@ -19,8 +18,8 @@ this->middleName = middleName;
 this->university = "MPEI";  
 this->faculty = faculty;  
 this->department = department;  
-this->group = group; 
-} 
+this->group = group;  
+}  
 };  
  
 void PrintStudInfo(string firstName, string lastName, string middleName, string university, string faculty, string department, string group) {  

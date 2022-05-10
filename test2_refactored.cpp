@@ -5,20 +5,17 @@ using namespace std;
  
 class Complex {  
 public:  
-double re, im;  
- 
+double re;  
+double im;  
 Complex(double re, double im) {  
 this->re = re;  
-this->im = im; 
+this->im = im;  
 }  
  
 double GetRe() { return this->re; 
-}  
-double GetIm() { return this->im; 
-}  
-void SetRe(double re) { this->re = re; 
-}  
-void SetIm(double im) { this->im = im; 
+} double GetIm() { return this->im; 
+} void SetRe(double re) { this->re = re; 
+} void SetIm(double im) { this->im = im; 
 } 
 };  
  

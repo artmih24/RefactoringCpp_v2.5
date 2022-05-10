@@ -156,7 +156,7 @@ float GetSqr(float a) {
 }  
  
 float GetMax(float a, float b) {  
-	return(a > b) ? a : b; 
+	return(a > b) ? a :b; 
 }  
  
 float SomeBigFunc(float a, float b) {  

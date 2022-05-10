@@ -3,7 +3,7 @@
 #include "CppMethod.h"
 
 CppMethod::CppMethod() {
-    lexemes = {};
+    tokens = {};
     parameters = {};
     oldParameters = {};
     body = {};
@@ -12,7 +12,7 @@ CppMethod::CppMethod() {
 }
 
 CppMethod::CppMethod(vector<string> lexemes_) {
-    lexemes = lexemes_;
+    tokens = lexemes_;
     parameters = this->GetMethodParameters();
     oldParameters = this->GetMethodParameters();
     body = this->GetMethodBody();
@@ -21,47 +21,47 @@ CppMethod::CppMethod(vector<string> lexemes_) {
 }
 
 vector<Parameter> CppMethod::GetMethodParameters() {
-    vector<string> lexemes = this->lexemes;
+    vector<string> tokens = this->tokens;
     vector<Parameter> parameters = {};
     bool params = false;
-    int lexemesSize = lexemes.size(),
+    int tokensSize = tokens.size(),
         start = -1,
         j = 0;
-    for (int i = 0; i < lexemesSize; i++) {
-        if (lexemes[i] == "(" && !params) {
+    for (int i = 0; i < tokensSize; i++) {
+        if (tokens[i] == "(" && !params) {
             start = i;
             params = true;
         }
-        if (lexemes[i] == ")") {
+        if (tokens[i] == ")") {
             j = i;
             break;
         }
     }
     for (int i = start + 1; i < j - 1; i += 3)
-        if (lexemes[i] != ")") {
+        if (tokens[i] != ")") {
             Parameter parameter = {};
-            parameter.type = lexemes[i];
-            parameter.name = lexemes[i + 1];
+            parameter.type = tokens[i];
+            parameter.name = tokens[i + 1];
             parameters.push_back(parameter);
         }
     return parameters;
 }
 
 vector<string> CppMethod::GetMethodBody() {
-    vector<string> lexemes = this->lexemes,
-        bodyLexemes = {};
-    int lexemesSize = lexemes.size(),
+    vector<string> tokens = this->tokens,
+        bodyTokens = {};
+    int tokensSize = tokens.size(),
         depth = 0, 
         i = 0, 
         start = -1;
-    if (lexemesSize != 0) {
-        for (i = 0; i < lexemesSize; i++) {
-            if (lexemes[i] == "{") {
+    if (tokensSize != 0) {
+        for (i = 0; i < tokensSize; i++) {
+            if (tokens[i] == "{") {
                 depth++;
                 if (start == -1)
                     start = i;
             }
-            if (lexemes[i] == "}") {
+            if (tokens[i] == "}") {
                 if (depth > 1)
                     depth--;
                 else
@@ -70,44 +70,44 @@ vector<string> CppMethod::GetMethodBody() {
         }
         if (start >= 0) {
             for (int j = start; j < i; j++)
-                bodyLexemes.push_back(lexemes[j]);
-            bodyLexemes.push_back("}");
-            return bodyLexemes;
+                bodyTokens.push_back(tokens[j]);
+            bodyTokens.push_back("}");
+            return bodyTokens;
         }
     }
     return {};
 }
 
 string CppMethod::GetMethodType() {
-    return this->lexemes[0];
+    return this->tokens[0];
 }
 
 string CppMethod::GetMethodName() {
-    return this->lexemes[1];
+    return this->tokens[1];
 }
 
-vector<string> CppMethod::GetLexemes()
+vector<string> CppMethod::GetTokens()
 {
-    return this->lexemes;
+    return this->tokens;
 }
 
-vector<string> CppMethod::ToLexemes() {
-    vector<string> lexemes = {},
+vector<string> CppMethod::ToTokens() {
+    vector<string> tokens = {},
         body = this->body;
     vector<Parameter> parameters = this->parameters;
     int parametersSize = parameters.size(),
         bodySize = body.size();
-    lexemes.push_back(this->type);
-    lexemes.push_back(this->name);
-    lexemes.push_back("(");
+    tokens.push_back(this->type);
+    tokens.push_back(this->name);
+    tokens.push_back("(");
     for (int i = 0; i < parametersSize; i++) {
-        lexemes.push_back(parameters[i].type);
-        lexemes.push_back(parameters[i].name);
+        tokens.push_back(parameters[i].type);
+        tokens.push_back(parameters[i].name);
         if (i < parametersSize - 1)
-            lexemes.push_back(",");
+            tokens.push_back(",");
     }
-    lexemes.push_back(")");
+    tokens.push_back(")");
     for (int i = 0; i < bodySize; i++)
-        lexemes.push_back(body[i]);
-    return lexemes;
+        tokens.push_back(body[i]);
+    return tokens;
 }

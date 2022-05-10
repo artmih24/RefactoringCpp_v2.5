@@ -1,8 +1,8 @@
 #include "CppClassMethod.h"
 
 CppClassMethod::CppClassMethod() {
-    accessMode = AccessMode::Null;
-    this->lexemes = {};
+    accessMode = AccessMode::Private;
+    this->tokens = {};
     parameters = {};
     oldParameters = {};
     body = {};
@@ -31,14 +31,14 @@ CppClassMethod::CppClassMethod() {
 //    this->className = className;
 //}
 
-CppClassMethod::CppClassMethod(vector<string> lexemes, 
+CppClassMethod::CppClassMethod(vector<string> methodTokens,
                                string className, 
-                               vector<string> classCode, 
+                               vector<string> tokens,
                                vector<CppClassField> fields, 
                                vector<CppClassMethod> methods, 
                                vector<CppClassConstructor> constructors) {
-    accessMode = GetAccessMode(classCode);
-    this->lexemes = lexemes;
+    accessMode = GetAccessMode(tokens);
+    this->tokens = methodTokens;
     parameters = GetMethodParameters();
     oldParameters = GetMethodParameters();
     body = GetMethodBody();
@@ -67,47 +67,47 @@ CppClassMethod::CppClassMethod(vector<string> lexemes,
 //}
 
 vector<Parameter> CppClassMethod::GetMethodParameters() {
-    vector<string> lexemes = this->lexemes;
+    vector<string> tokens = this->tokens;
     vector<Parameter> parameters = {};
     bool params = false;
-    int lexemesSize = lexemes.size(),
+    int lexemesSize = tokens.size(),
         start = -1,
         j = 0;
     for (int i = 0; i < lexemesSize; i++) {
-        if (lexemes[i] == "(" && !params) {
+        if (tokens[i] == "(" && !params) {
             start = i;
             params = true;
         }
-        if (lexemes[i] == ")") {
+        if (tokens[i] == ")") {
             j = i;
             break;
         }
     }
     for (int i = start + 1; i < j - 1; i += 3)
-        if (lexemes[i] != ")") {
+        if (tokens[i] != ")") {
             Parameter parameter = {};
-            parameter.type = lexemes[i];
-            parameter.name = lexemes[i + 1];
+            parameter.type = tokens[i];
+            parameter.name = tokens[i + 1];
             parameters.push_back(parameter);
         }
     return parameters;
 }
 
 vector<string> CppClassMethod::GetMethodBody() {
-    vector<string> lexemes = this->lexemes,
-        bodyLexemes = {};
-    int lexemesSize = lexemes.size(),
+    vector<string> tokens = this->tokens,
+        bodyTokens = {};
+    int tokensSize = tokens.size(),
         depth = 1,
         i = 0,
         start = -1;
-    if (lexemesSize != 0) {
-        for (i = 0; i < lexemesSize; i++) {
-            if (lexemes[i] == "{") {
+    if (tokensSize != 0) {
+        for (i = 0; i < tokensSize; i++) {
+            if (tokens[i] == "{") {
                 depth++;
                 if (start == -1)
                     start = i;
             }
-            if (lexemes[i] == "}") {
+            if (tokens[i] == "}") {
                 if (depth > 2)
                     depth--;
                 else
@@ -116,9 +116,9 @@ vector<string> CppClassMethod::GetMethodBody() {
         }
         if (start >= 0) {
             for (int j = start; j < i; j++)
-                bodyLexemes.push_back(lexemes[j]);
-            bodyLexemes.push_back("}");
-            return bodyLexemes;
+                bodyTokens.push_back(tokens[j]);
+            bodyTokens.push_back("}");
+            return bodyTokens;
         }
     }
     return {};
@@ -126,77 +126,111 @@ vector<string> CppClassMethod::GetMethodBody() {
 
 vector<string> CppClassMethod::GetUsingFields(vector<CppClassField> fields) {
     vector<string> usingFields = {},
-        lexemes = this->lexemes;
+        result = {},
+        tokens = this->tokens;
     vector<CppClassField> classFields = fields;
-    for (string lexeme : lexemes)
-        for (CppClassField classField : classFields)
-            if (lexeme == classField.name) {
+    for (string token : tokens)
+        for (CppClassField classField : classFields) {
+            if (token == classField.name) {
                 usingFields.push_back(classField.name);
                 break;
             }
-    return usingFields;
+            else if (token[0] == '>' && 
+                     token.substr(1, token.size() - 1) == classField.name) {
+                usingFields.push_back(classField.name);
+                break;
+            }
+        }
+    for (string field : usingFields) {
+        bool exists = false;
+        for (string res : result)
+            if (res == field) {
+                exists = true;
+                break;
+            }
+        if (!exists)
+            result.push_back(field);
+    }
+    return result;
 }
 
 vector<CppClassMethod> CppClassMethod::GetUsingMethods(vector<CppClassMethod> methods) {
-    vector<string> lexemes = this->lexemes;
+    vector<string> tokens = this->tokens;
     vector<CppClassMethod> usingMethods = {},
+        result = {},
         classMethods = methods;
-    for (string lexeme : lexemes)
+    for (string token : tokens)
         for (CppClassMethod classMethod : classMethods)
-            if (lexeme == classMethod.name) {
+            if (token == classMethod.name) {
                 usingMethods.push_back(classMethod);
                 break;
             }
-    return usingMethods;
+    for (CppClassMethod method : usingMethods) {
+        bool exists = false;
+        for (CppClassMethod res : result)
+            if (res.name == method.name) {
+                exists = true;
+                break;
+            }
+        if (!exists)
+            result.push_back(method);
+    }
+    return result;
 }
 
 vector<CppClassConstructor> CppClassMethod::GetUsingConstructors(vector<CppClassConstructor> constructors) {
-    vector<string> lexemes = this->lexemes;
+    vector<string> tokens = this->tokens;
     vector<CppClassConstructor> classConstructors = constructors,
+        result = {},
         usingConstructors = {};
     int valuesSize = 0;
-    for (int i = 0; i < lexemes.size(); i++)
+    for (int i = 0; i < tokens.size(); i++)
         for (CppClassConstructor constructor : classConstructors)
-            if (lexemes[i] == name &&
-                lexemes[i + 1] == "(" &&
-                i < lexemes.size() - 1) {
-                if (lexemes[i + 2] == ")" &&
+            if (tokens[i] == name &&
+                tokens[i + 1] == "(" &&
+                i < tokens.size() - 1) {
+                if (tokens[i + 2] == ")" &&
                     constructor.parameters.size() == 0)
                     usingConstructors.push_back(constructor);
                 else {
                     valuesSize = 1;
-                    for (int j = i + 2; j < lexemes.size(); j++)
-                        if (lexemes[j] == ",")
+                    for (int j = i + 2; j < tokens.size(); j++)
+                        if (tokens[j] == ",")
                             valuesSize++;
                     if (constructor.parameters.size() == valuesSize)
                         usingConstructors.push_back(constructor);
                 }
             }
-    return usingConstructors;
+    for (CppClassConstructor constructor : usingConstructors) {
+        bool exists = false;
+        if (!exists)
+            result.push_back(constructor);
+    }
+    return result;
 }
 
 CppClassDestructor CppClassMethod::GetUsingDestructor() {
     return this->usingDestructor;
 }
 
-AccessMode CppClassMethod::GetAccessMode(vector<string> classCode) {
-    vector<string> lexemes = classCode;
+AccessMode CppClassMethod::GetAccessMode(vector<string> tokens) {
+    vector<string> tokens_ = tokens;
     AccessMode accessMode = AccessMode::Private;
-    for (int i = 0; i < lexemes.size(); i++)
-        if (lexemes[i] == this->type &&
-            lexemes[i + 1] == this->name &&
-            lexemes[i + 2] == "(" &&
-            i < lexemes.size() - 2) {
+    for (int i = 0; i < tokens.size(); i++)
+        if (tokens_[i] == this->type &&
+            tokens_[i + 1] == this->name &&
+            tokens_[i + 2] == "(" &&
+            i < tokens_.size() - 2) {
             for (int j = i; j >= 0; j--) {
-                if (lexemes[j] == "public") {
+                if (tokens_[j] == "public") {
                     accessMode = AccessMode::Public;
                     break;
                 }
-                else if (lexemes[j] == "private") {
+                else if (tokens_[j] == "private") {
                     accessMode = AccessMode::Private;
                     break;
                 }
-                else if (lexemes[j] == "protected") {
+                else if (tokens_[j] == "protected") {
                     accessMode = AccessMode::Protected;
                     break;
                 }
@@ -206,38 +240,38 @@ AccessMode CppClassMethod::GetAccessMode(vector<string> classCode) {
 }
 
 string CppClassMethod::GetClassName() {
-    return this->lexemes[1];
+    return this->tokens[1];
 }
 
 string CppClassMethod::GetMethodType() {
-    return this->lexemes[0];
+    return this->tokens[0];
 }
 
 string CppClassMethod::GetMethodName() {
-    return this->lexemes[1];
+    return this->tokens[1];
 }
 
 string CppClassMethod::GetMethodNameV2() {
-    return this->lexemes[4];
+    return this->tokens[4];
 }
 
-vector<string> CppClassMethod::ToLexemes() {
-    vector<string> lexemes = {},
+vector<string> CppClassMethod::ToTokens() {
+    vector<string> tokens = {},
         body = this->body;
     vector<Parameter> parameters = this->parameters;
     int parametersSize = parameters.size(),
         bodySize = body.size();
-    lexemes.push_back(this->type);
-    lexemes.push_back(this->name);
-    lexemes.push_back("(");
+    tokens.push_back(this->type);
+    tokens.push_back(this->name);
+    tokens.push_back("(");
     for (int i = 0; i < parametersSize; i++) {
-        lexemes.push_back(parameters[i].type);
-        lexemes.push_back(parameters[i].name);
+        tokens.push_back(parameters[i].type);
+        tokens.push_back(parameters[i].name);
         if (i < parametersSize - 1)
-            lexemes.push_back(",");
+            tokens.push_back(",");
     }
-    lexemes.push_back(")");
+    tokens.push_back(")");
     for (int i = 0; i < bodySize; i++)
-        lexemes.push_back(body[i]);
-    return lexemes;
+        tokens.push_back(body[i]);
+    return tokens;
 }

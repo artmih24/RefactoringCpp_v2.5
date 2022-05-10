@@ -18,6 +18,7 @@ void RefactoringManager::Refactoring() {
     this->RemoveAssignmentsToParametersProc(this->code);
     this->RemoveParametersProc(this->code);
     this->SendFullObjectProc(this->code);
+    this->ExtractClassProc(this->code);
     this->fileContent = this->code.ToString();
     WriteFile(this->outFilePath);
 }
@@ -29,7 +30,7 @@ void RefactoringManager::RemoveAssignmentsToParametersProc(CppCode code) {
     for (int i = 0; i < methods.size(); i++)
         methods[i] = this->RemoveAssignmentsToParameters(methods[i]);
     code.UpdateMethods(methods);
-    code.UpdateLexemes();
+    code.UpdateTokens();
     this->code = code;
 }
 
@@ -97,18 +98,18 @@ void RefactoringManager::RemoveParametersProc(CppCode code) {
         for (int i = 0; i < methods.size(); i++)
             methods[i] = this->RemoveParameters(methods[i]);
         code.UpdateMethods(methods);
-        code.UpdateLexemes();
+        code.UpdateTokens();
         this->code = code;
         // рефакторинг во всем коде, включая и преобразованные 
         // методы - удаление значений, передававшихся в неиспользуемые параметры
         for (int i = 0; i < methods.size(); i++)
             code.UpdateMethodCalls(methods[i]);
         code.UpdateMethods(methods);
-        code.UpdateLexemes();
+        code.UpdateTokens();
         this->code = code;
         string codeString = code.ToString();
         code.UpdateCode(codeString);
-        code.lexemes = code.GetLexemes();
+        code.tokens = code.GetTokens();
         methods = code.GetMethods();
     }
     this->code = code;
@@ -178,26 +179,38 @@ CppMethod RefactoringManager::RemoveParameters(CppMethod method) {
 void RefactoringManager::SendFullObjectProc(CppCode code) {
     vector<CppMethod> methods = code.methods;   // список методов кода
     int j = 0;
+    // цикл по всем методам
     for (int i = 0; i < methods.size(); i++) {
         vector<MethodCall> methodCalls = code.GetMethodCalls(methods[i]);
+        // цикл по всем вызовам метода
         for (MethodCall methodCall : methodCalls) {
             vector<string> values = methodCall.parameterValues;
             vector<Object> objects = {},
                 objectsFin = {};
+            // цикл по всем значениям параметров
             for (int k = 0; k < values.size(); k++) {
+                // поиск полей объектов в параметрах
                 for (j = 0; j < values[k].size(); j++)
                     if (values[k].find('.') && j < values[k].size())
                         break;
+                // если в параметры передаются поля объекта
                 if (j < values[k].size()) {
+                    // находим объект
                     Object object = {};
                     object.name = values[k].substr(0, values[k].find('.'));
-                    vector<string> lexemes = code.lexemes,
-                        types = code.GetTypes("class");
-                    int lexemesSize = lexemes.size();
+                    // находим, к какому типу объект относится
+                    vector<string> tokens = code.tokens,
+                        types = code.GetTypes("class"),
+                        types2 = code.GetTypes("struct"),
+                        types3 = code.GetTypes("union");
+                    types.insert(types.end(), types2.begin(), types2.end());
+                    types.insert(types.end(), types3.begin(), types3.end());
+                    int lexemesSize = tokens.size();
                     for (int l = 0; l < lexemesSize; l++) {
                         for (string type : types)
-                            if (lexemes[l] == type && lexemes[l + 1] == object.name) {
-                                object.className = lexemes[l];
+                            if (tokens[l] == type && tokens[l + 1] == object.name) {
+                                // если смогли найти тип
+                                object.className = tokens[l];
                                 break;
                             }
                         if (object.className != "")
@@ -207,6 +220,7 @@ void RefactoringManager::SendFullObjectProc(CppCode code) {
                     objects.push_back(object);
                 }
             }
+            // создаем список объектов без повторяющихся элементов
             for (Object object : objects) {
                 bool exists = false;
                 for (Object objectFin : objectsFin) {
@@ -218,24 +232,30 @@ void RefactoringManager::SendFullObjectProc(CppCode code) {
                 if (!exists)
                     objectsFin.push_back(object);
             }
+            // если в параметрах есть поля одного и того же объекта
             if (objectsFin.size() == 1) {
+                // пропускаем если не смогли определить тип объекта
                 if (objects[0].className == "")
                     continue;
+                // копируем метод и получаем его вызов
                 MethodSendFullObject result = this->SendFullObject(methods[i], objects[0], methodCall);
+                // пропускаем если не смогли найти название объекта
                 if (result.cppMethod.name == "")
                     continue;
                 MethodCall newMethodCall = result.methodCall;
+                // обновляем вызов метода
                 code.UpdateMethodCallsV2(methods[i], methodCall, newMethodCall);
+                // обновляем данные кода программы
                 methods = code.methods;
                 methods.push_back(result.cppMethod);
                 //methods = code.GetMethods();
                 code.UpdateMethods(methods);
-                code.UpdateLexemes();
+                code.UpdateTokens();
             }
         }
     }
     //code.UpdateMethods(methods);
-    code.UpdateLexemesV2();
+    code.UpdateTokensV2();
     this->code = code;
 }
 
@@ -309,70 +329,63 @@ MethodSendFullObject RefactoringManager::SendFullObject(CppMethod method, Object
 }
 
 void RefactoringManager::ExtractClassProc(CppCode code) {
-    vector<CppClass> classes = code.classes;
-    vector<CppClassMethod> curClassMethods = {};
+    std::vector<CppClass> classes = code.classes;
+    std::vector<CppClassMethod> curClassMethods = {};
     int methodsSize = 0,
+        classesSize = classes.size(),
         numWidth = 0,
         k = 0,
         num = 0, 
         prevNum = 0;
-    string selectedMethodsNumsStr = "";
-    set<int> selectedMethodsNums = {};
-    CppClasses resultClasses = {};
-    for (int i = 0; i < classes.size(); i++) {
-        selectedMethodsNums = {};
-        curClassMethods = classes[i].methods;
-        methodsSize = curClassMethods.size();
-        numWidth = to_string(methodsSize).length();
-        cout << "Select methods to move in new class" << endl;
-        for (int j = 0; j < methodsSize; j++)
-            cout << setw(numWidth) << (j + 1) << curClassMethods[j].name << endl;
-        cin >> selectedMethodsNumsStr;
-        /*string::iterator iteratorRemoveSpaces = remove_if(selectedMethodsNumsStr.begin(), selectedMethodsNumsStr.end(), ' ');
-        selectedMethodsNumsStr.erase(iteratorRemoveSpaces, selectedMethodsNumsStr.end());*/
-        regex extraSpaces("[ ]+"),
-            extraCommas("[,]+"), 
-            extraDashes("[-]+"),
-            extraIntervals("[-]{1}[0-9]+[-]{1}"),
-            letters("[A-Za-zА-ЯЁа-яё]+"),
-            specSymbols("[._\\/\?+=<>\"\'`~#@$%^&*()]");
-        regex_replace(selectedMethodsNumsStr, extraSpaces, " ");
-        regex_replace(selectedMethodsNumsStr, extraCommas, ",");
-        regex_replace(selectedMethodsNumsStr, extraDashes, "-");
-        regex_replace(selectedMethodsNumsStr, extraIntervals, "-");
-        regex_replace(selectedMethodsNumsStr, letters, "");
-        regex_replace(selectedMethodsNumsStr, specSymbols, "");
-        for (int j = 0; j < selectedMethodsNumsStr.length(); j++) {
-            for (k = j; k < selectedMethodsNumsStr.length(); k++)
-                if (selectedMethodsNumsStr.substr(k, k + 1) == "," &&
-                    selectedMethodsNumsStr.substr(k, k + 1) == "-")
-                    break;
-            num = stoi(selectedMethodsNumsStr.substr(j, k - 1));
-            if (selectedMethodsNumsStr.substr(j - 1, j) == "-")
-                for (int l = prevNum; l < num; l++)
-                    selectedMethodsNums.insert(l - 1);
-            else
-                if (selectedMethodsNumsStr.substr(k, k + 1) == "-")
-                    prevNum = num;
-            if (num <= methodsSize)
-                selectedMethodsNums.insert(num - 1);
-            else {
-                cout << "Parsed number " << num;
-                while (num > methodsSize)
-                    num /= 10;
-                cout << " was divided by 10 while it was greater than " << methodsSize << " and written like " << num << endl;
-                selectedMethodsNums.insert(num - 1);
-            }
-            if (selectedMethodsNumsStr.substr(k, k + 1) == "-")
-                prevNum = num;
-            j = k + 1;
+    std::string selectedMethodsNumsStr = "";
+    std::set<int> selectedMethodsNums = {};
+    CppClasses result = {};
+    std::vector<std::string> newTokens = {};
+    for (int i = 0; i < classesSize; i++) {
+        if (classes[i].methods.size() > 1) {
+            selectedMethodsNums = {};
+            curClassMethods = classes[i].methods;
+            methodsSize = curClassMethods.size();
+            numWidth = to_string(methodsSize).size();
+            cout << "Select methods to move in new class" << endl;
+            cout << "or enter '0' to skip class " << classes[i].name << endl;
+            for (int j = 0; j < methodsSize; j++)
+                cout << setw(numWidth) << (j + 1) << " " << curClassMethods[j].name << endl;
+            cin >> selectedMethodsNumsStr;
+            /*string::iterator iteratorRemoveSpaces = remove_if(selectedMethodsNumsStr.begin(), selectedMethodsNumsStr.end(), ' ');
+            selectedMethodsNumsStr.erase(iteratorRemoveSpaces, selectedMethodsNumsStr.end());*/
+            regex extraSpaces("[ ]+"),
+                extraCommas("[,]+"),
+                extraDashes("[-]+"),
+                extraIntervals("[-]{1}[0-9]+[-]{1}"),
+                letters("[A-Za-zА-ЯЁа-яё]+"),
+                specSymbols("[._\\/\?+=<>\"\'`~#@$%^&*()]");
+            regex_replace(selectedMethodsNumsStr, extraSpaces, " ");
+            regex_replace(selectedMethodsNumsStr, extraCommas, ",");
+            regex_replace(selectedMethodsNumsStr, extraDashes, "-");
+            regex_replace(selectedMethodsNumsStr, extraIntervals, "-");
+            regex_replace(selectedMethodsNumsStr, letters, "");
+            regex_replace(selectedMethodsNumsStr, specSymbols, "");
+            selectedMethodsNums = GetMethodNumbers(selectedMethodsNumsStr);
+            if (*selectedMethodsNums.begin() == 0 && selectedMethodsNums.size() == 1)
+                continue;
+            std::vector<int> vecSelectedMethodsNums(selectedMethodsNums.begin(), selectedMethodsNums.end());
+            result = ExtractClass(classes[i], vecSelectedMethodsNums);
+            //classes[i] = resultClasses.newClassWExtractedMethods;
+            classes[i] = result.oldClassWOExtractedMethods;
+            //classes[i].UpdateClass();
+            //classes.push_back(resultClasses.oldClassWOExtractedMethods);
+            classes.push_back(result.newClassWExtractedMethods);
+            newTokens = result.newTokens;
         }
-        vector<int> vecSelectedMethodsNums(selectedMethodsNums.begin(), selectedMethodsNums.end());
-        resultClasses = ExtractClass(classes[i], vecSelectedMethodsNums);
-        classes[i] = resultClasses.oldClassWOExtractedMethods;
-        classes.push_back(resultClasses.newClassWExtractedMethods);
     }
+    if (newTokens.size() != 0)
+        code.tokens = newTokens;
+    code = CppCode(code.ToString());
     code.classes = classes;
+    code.UpdateTokensV3();
+    code.UpdateCode(code.ToString());
+    this->code = code;
 }
 
 CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> methodsNums) {
@@ -399,22 +412,23 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
         newClass = {};
     CppClasses result = {};
     int ind = 0;
-    for (int i = 0; i < methods.size(); i++)
+    for (int i = fields.size(); i < methods.size() + fields.size(); i++) {
+        int ii = i - fields.size();
         for (int methodNum : methodsNums)
-            if (i == methodNum) {
-                newClassMethods.push_back(methods[i]);
+            if (i != methodNum) {
+                newClassMethods.push_back(methods[ii]);
                 for (int j = 0; j < classGraph.totalSize; j++)
-                    if (classGraph.cppClassGraph[i - classGraph.fieldsSize][j]) {
+                    if (classGraph.cppClassGraph[i][j]) {
                         if (j >= 0 && j < classGraph.fieldsSize)
                             newClassFields.push_back(fields[j]);
                         else {
                             ind = j - classGraph.fieldsSize;
                             if (ind >= 0 && ind < classGraph.methodsSize)
-                                newClassMethods.push_back(methods[j]);
+                                newClassMethods.push_back(methods[ind]);
                             else {
                                 ind -= classGraph.methodsSize;
                                 if (ind >= 0 && ind < classGraph.constructorsSize)
-                                    newClassConstructors.push_back(constructors[j]);
+                                    newClassConstructors.push_back(constructors[ind]);
                                 else if (ind >= classGraph.constructorsSize)
                                     newClassDestructor = destructor;
                             }
@@ -422,25 +436,26 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
                     }
             }
             else {
-                oldClassMethods.push_back(methods[i]);
+                oldClassMethods.push_back(methods[ii]);
                 for (int j = 0; j < classGraph.totalSize; j++)
-                    if (classGraph.cppClassGraph[i - classGraph.fieldsSize][j]) {
+                    if (classGraph.cppClassGraph[i][j]) {
                         if (j >= 0 && j < classGraph.fieldsSize)
                             oldClassFields.push_back(fields[j]);
                         else {
                             ind = j - classGraph.fieldsSize;
                             if (ind >= 0 && ind < classGraph.methodsSize)
-                                oldClassMethods.push_back(methods[j]);
+                                oldClassMethods.push_back(methods[ind]);
                             else {
                                 ind -= classGraph.methodsSize;
                                 if (ind >= 0 && ind < classGraph.constructorsSize)
-                                    oldClassConstructors.push_back(constructors[j]);
+                                    oldClassConstructors.push_back(constructors[ind]);
                                 else if (ind >= classGraph.constructorsSize)
                                     oldClassDestructor = destructor;
                             }
                         }
                     }
             }
+    }
     oldClassFieldsFin.assign(oldClassFields.begin(), oldClassFields.end());
     oldClass.fields = oldClassFieldsFin;
     oldClassMethodsFin.assign(oldClassMethods.begin(), oldClassMethods.end());
@@ -448,8 +463,10 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
     oldClass.name = cppClass.name;
     oldClassConstructorsFin.assign(oldClassConstructors.begin(), oldClassConstructors.end());
     oldClass.constructors = oldClassConstructorsFin;
+    if (oldClass.constructors.size() == 0)
+        oldClass.CreateConstructor();
     oldClass.destructor = oldClassDestructor;
-    oldClass.classCode = oldClass.ToLexemes();
+    oldClass.tokens = oldClass.ToTokens();
     newClassFieldsFin.assign(newClassFields.begin(), newClassFields.end());
     newClass.fields = newClassFieldsFin;
     newClassMethodsFin.assign(newClassMethods.begin(), newClassMethods.end());
@@ -457,10 +474,194 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
     newClass.name = "New_" + cppClass.name;
     newClassConstructorsFin.assign(newClassConstructors.begin(), newClassConstructors.end());
     newClass.constructors = newClassConstructorsFin;
+    if (newClass.constructors.size() == 0)
+        newClass.CreateConstructor();
     newClass.destructor = newClassDestructor;
-    newClass.classCode = newClass.ToLexemes();
+    newClass.tokens = newClass.ToTokens();
+    vector<string> tokens = code.tokens,
+        newTokens = {};
+    for (int i = 0; i < tokens.size(); i++) {
+        //newTokens = {};
+        if (i < tokens.size() - 4 &&
+            tokens[i] == cppClass.name &&
+            tokens[i + 2] == "=" &&
+            tokens[i + 3] == cppClass.name &&
+            tokens[i + 4] == "(") {
+            int depth = 0,
+                j = 0;
+            vector<int> commasInds = {};
+            for (j = i; j < tokens.size(); j++) {
+                if (tokens[j] == "," && depth == 1)
+                    commasInds.push_back(j);
+                if (tokens[j] == "(")
+                    depth++;
+                if (tokens[j] == ")") {
+                    if (depth > 1)
+                        depth--;
+                    else
+                        break;
+                }
+            }
+            vector<string> values = {};
+            string curValue = "";
+            for (int k = i + 5; k < j + 1; k++) {
+                if (tokens[k] == "," || k == j) {
+                    values.push_back(curValue);
+                    curValue = "";
+                }
+                else
+                    curValue += tokens[k];
+            }
+            newTokens.push_back(tokens[i]);
+            newTokens.push_back(tokens[i + 1]);
+            newTokens.push_back(tokens[i + 2]);
+            newTokens.push_back(tokens[i + 3]);
+            newTokens.push_back(tokens[i + 4]);
+            //newTokens.push_back(tokens[i + 5]);
+            int indOld = 0,
+                indNew = 0;
+            vector<string> newObjDecl = {};
+            newObjDecl.push_back(newClass.name);
+            newObjDecl.push_back("New_" + tokens[i + 1]);
+            newObjDecl.push_back("=");
+            newObjDecl.push_back(newClass.name);
+            newObjDecl.push_back("(");
+            for (int k = i + 5; k < j; k++) {
+                int ind = indOld + indNew;
+                if (indOld < oldClass.fields.size() && 
+                    ind < cppClass.fields.size() &&
+                    cppClass.fields[ind].name == oldClass.fields[indOld].name) {
+                    newTokens.push_back(values[ind]);
+                    newTokens.push_back(",");
+                }
+                if (indNew < newClass.fields.size() &&
+                    ind < cppClass.fields.size() &&
+                    cppClass.fields[ind].name == newClass.fields[indNew].name) {
+                    newObjDecl.push_back(values[ind]);
+                    newObjDecl.push_back(",");
+                }
+                if (indOld < oldClass.fields.size() &&
+                    ind < cppClass.fields.size() &&
+                    cppClass.fields[ind].name == oldClass.fields[indOld].name) {
+                    indOld++;
+                }
+                if (indNew < newClass.fields.size() &&
+                    ind < cppClass.fields.size() &&
+                    cppClass.fields[ind].name == newClass.fields[indNew].name) {
+                    indNew++;
+                }
+            }
+            newObjDecl.pop_back();
+            newObjDecl.push_back(")");
+            newTokens.pop_back();
+            newTokens.push_back(")");
+            newTokens.push_back(";");
+            newTokens.push_back("\n");
+            for (string token : newObjDecl)
+                newTokens.push_back(token);
+            //newTokens.push_back("\n");
+            i = j;
+        }
+        else
+            newTokens.push_back(tokens[i]);
+    }
+    tokens = newTokens;
+    newTokens = {};
+    std::vector<std::string> objects = {},
+        classes = {};
+    std::vector<CppClass> cppClasses = {};
+    cppClasses.push_back(oldClass);
+    cppClasses.push_back(newClass);
+    for (int i = 0; i < tokens.size(); i++) {
+        for (CppClass cppClass : cppClasses) {
+            if (tokens[i] == cppClass.name && 
+                tokens[i + 1] != "{" && 
+                tokens[i + 1] != "(") {
+                objects.push_back(tokens[i + 1]);
+                classes.push_back(tokens[i]);
+                break;
+            }
+        }
+    }
+    for (int i = 0; i < tokens.size(); i++) {
+        std::string className = "",
+            fieldOrMethod = "";
+        bool flag = false,
+            flag2 = false;
+        for (int l = 0; l < objects.size(); l++) {
+            if (tokens[i].substr(0, objects[l].size() + 1) == objects[l] + ".") {
+                className = classes[l];
+                fieldOrMethod = tokens[i].substr(objects[l].size() + 1, tokens[i].size() - 1);
+                CppClass thisClass = {};
+                for (CppClass cppClass : cppClasses) {
+                    if (cppClass.name == className) {
+                        thisClass = cppClass;
+                        break;
+                    }
+                }
+                for (CppClassField field : thisClass.fields) {
+                    if (field.name == fieldOrMethod) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (!flag) {
+                    for (CppClassMethod method : thisClass.methods) {
+                        if (method.name == fieldOrMethod) {
+                            flag2 = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (!flag && !flag2 && className != "") {
+            string otherClass = "",
+                otherObject = "";
+            for (int m = 0; m < classes.size(); m++) {
+                if (classes[m] != className) {
+                    otherClass = classes[m];
+                    otherObject = objects[m];
+                    break;
+                }
+            }
+            newTokens.push_back(otherObject + "." + fieldOrMethod);
+        }
+        else
+            newTokens.push_back(tokens[i]);
+    }
+    result.newTokens = newTokens;
     result.oldClassWOExtractedMethods = oldClass;
     result.newClassWExtractedMethods = newClass;
+    return result;
+}
+
+set<int> RefactoringManager::GetMethodNumbers(string input) {
+    set<int> result = {};
+    stringstream str_strm;
+    string temp_str;
+    int temp_int;
+    regex_replace(input, regex("[,]{1}"), " , ");
+    regex_replace(input, regex("[-]{1}"), " - ");
+    str_strm << input; //convert the string s into stringstream
+    while (!str_strm.eof()) {
+        str_strm >> temp_str; //take words into temp_str one by one
+        if (stringstream(temp_str) >> temp_int) { //try to convert string to int
+            result.insert(temp_int);
+            str_strm >> temp_str;
+            if (temp_str == ",")
+                continue;
+            else if (temp_str == "-") {
+                int start = temp_int;
+                str_strm >> temp_str;
+                if (stringstream(temp_str) >> temp_int) {
+                    for (int num = start; num <= temp_int; num++)
+                        result.insert(num);
+                }
+            }
+        }
+        temp_str = ""; //clear temp string
+    }
     return result;
 }
 

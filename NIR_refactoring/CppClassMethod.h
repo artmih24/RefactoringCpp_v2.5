@@ -7,7 +7,7 @@
 
 class CppClassMethod {
 private:
-    std::vector<std::string> lexemes;         // лексемы метода
+    std::vector<std::string> tokens;         // лексемы метода
 
     //CppClass cppClass;
 
@@ -33,7 +33,7 @@ public:
 
     /// <summary>Конструктор объекта класса CppMethod</summary>
     /// <param name="lexemes">- список лексем</param>
-    CppClassMethod(vector<string> lexemes, string className, vector<string> classCode, vector<CppClassField> fields, vector<CppClassMethod> methods, vector<CppClassConstructor> constructors);
+    CppClassMethod(vector<string> methodTokens, string className, vector<string> tokens, vector<CppClassField> fields, vector<CppClassMethod> methods, vector<CppClassConstructor> constructors);
     //CppClassMethod(vector<string> lexemes, string className);
 
     /// <summary>Получение списка параметров метода</summary>
@@ -52,7 +52,7 @@ public:
 
     CppClassDestructor GetUsingDestructor();
 
-    AccessMode GetAccessMode(std::vector<std::string> classCode);
+    AccessMode GetAccessMode(std::vector<std::string> tokens);
 
     std::string GetClassName();
 
@@ -67,6 +67,6 @@ public:
 
     /// <summary>Получение списока лексем</summary>
     /// <returns>Список лексем</returns>
-    std::vector<std::string> ToLexemes();
+    std::vector<std::string> ToTokens();
 };
 

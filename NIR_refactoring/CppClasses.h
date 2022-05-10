@@ -1,7 +1,9 @@
 #pragma once
 #include "CppClass.h"
 
+/// <summary>Классы</summary>
 struct CppClasses {
-    CppClass oldClassWOExtractedMethods;
-    CppClass newClassWExtractedMethods;
+    CppClass oldClassWOExtractedMethods;    // новый класс вместо исходного
+    CppClass newClassWExtractedMethods;     // новый класс
+    std::vector<std::string> newTokens;     // новые токены кода
 };

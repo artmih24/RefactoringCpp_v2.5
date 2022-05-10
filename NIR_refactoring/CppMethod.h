@@ -11,7 +11,7 @@ using namespace std;
 /// <summary>Класс метода</summary>
 class CppMethod {
 private:
-    vector<string> lexemes;         // лексемы метода
+    vector<string> tokens;         // лексемы метода
 
 public:
     vector<Parameter> parameters,   // параметры метода
@@ -27,7 +27,7 @@ public:
 
     /// <summary>Конструктор объекта класса CppMethod</summary>
     /// <param name="lexemes">- список лексем</param>
-    CppMethod(vector<string> lexemes);
+    CppMethod(vector<string> tokens);
 
     /// <summary>Получение списка параметров метода</summary>
     /// <returns>Список параметров метода</returns>
@@ -45,9 +45,9 @@ public:
     /// <returns>Название метода</returns>
     string GetMethodName();
 
-    vector<string> GetLexemes();
+    vector<string> GetTokens();
 
     /// <summary>Получение списока лексем</summary>
     /// <returns>Список лексем</returns>
-    vector<string> ToLexemes();
+    vector<string> ToTokens();
 };

@@ -19,11 +19,11 @@ private:
     string cppCode;                 // строка, содержащая код
 
 public:
-    vector<string> lexemes;         // список лексем кода
+    vector<string> tokens;          // список лексем кода
 
     vector<CppMethod> methods;      // список методов кода
 
-    vector<CppClass> classes;
+    vector<CppClass> classes;       // список классов в коде
 
     vector<string> types;           // список типов переменных в коде
 
@@ -40,10 +40,11 @@ public:
     /// <summary>Дополнительные действия для разбиения кода на лексемы</summary>
     string Modify();
 
-    /// <summary>Разбиение кода на лексемы</summary>
-    vector<string> GetLexemes();
-    /// <summary>Разбиение кода на лексемы</summary>
-    vector<string> GetLexemesV2();
+    /// <summary>Токенизация кода</summary>
+    vector<string> GetTokens();
+
+    /// <summary>Токенизация кода</summary>
+    vector<string> GetTokensV2();
 
     /// <summary>Получение типов данных, описанных в коде</summary>
     /// <param name="type">- способ объявления пользовательского типа</param>
@@ -58,24 +59,42 @@ public:
     /// <returns>вектор методов в коде</returns>
     vector<CppMethod> GetMethods();
 
+    /// <summary>Полечение списка вызовов метода</summary>
+    /// <param name="cppMethod">- метод, вызовы которого требуется получить</param>
+    /// <returns>список вызовов методов</returns>
     vector<MethodCall> GetMethodCalls(CppMethod cppMethod);
 
+    /// <summary>Получение списка классов в коде</summary>
+    /// <returns>список классов в коде</returns>
     vector<CppClass> GetClasses();
 
-    /// <summary>Обновление частей списка лексем, содержащих вызовы методов</summary>
+    /// <summary>Обновление частей списка токенов, содержащих вызовы методов</summary>
     /// <param name="cppMethod">- метод, вызовы которого нужно обновить</param>
     void UpdateMethodCalls(CppMethod cppMethod);
 
+    /// <summary>Обновление частей списка токенов, содержащих вызовы методов</summary>
+    /// <param name="cppMethod">- метод, вызовы которого нужно обновить</param>
+    /// <param name="methodCall">- вызов метода, который нужно обновить</param>
+    /// <param name="newMethodCall">- новый вызов метода</param>
     void UpdateMethodCalls(CppMethod cppMethod, MethodCall methodCall, MethodCall newMethodCall);
+
+    /// <summary>Обновление частей списка токенов, содержащих вызовы методов</summary>
+    /// <param name="cppMethod">- метод, вызовы которого нужно обновить</param>
+    /// <param name="methodCall">- вызов метода, который нужно обновить</param>
+    /// <param name="newMethodCall">- новый вызов метода</param>
     void UpdateMethodCallsV2(CppMethod cppMethod, MethodCall methodCall, MethodCall newMethodCall);
 
     /// <summary>Обновление методов</summary>
     /// <param name="methods">- список методов</param>
     void UpdateMethods(vector<CppMethod> methods);
 
-    /// <summary>Обновление списка лексем</summary>
-    void UpdateLexemes();
-    void UpdateLexemesV2();
+    /// <summary>Обновление списка токенов</summary>
+    void UpdateTokens();
+
+    /// <summary>Обновление списка токенов</summary>
+    void UpdateTokensV2();
+
+    void UpdateTokensV3();
 
     /// <summary>Обновление строки, содержащей код</summary>
     /// <param name="code">- строка, содержащая код</param>
@@ -85,6 +104,8 @@ public:
     /// <returns>Строка, содержащая код</returns>
     string ToString();
 
+    /// <summary>Получение строки, содержащей код</summary>
+    /// <returns>Строка, содержащая код</returns>
     string GetCode();
 
     /// <summary>Получение разделителя в коде</summary>

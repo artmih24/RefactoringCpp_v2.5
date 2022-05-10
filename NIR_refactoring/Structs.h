@@ -2,6 +2,7 @@
 
 #pragma once
 #include <string>
+#include <map>
 
 #include "CppMethod.h"
 #include "Structs2.h"

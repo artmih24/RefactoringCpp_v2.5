@@ -3,7 +3,7 @@
 #include "CppClass.h"
 
 CppClass::CppClass() {
-	classCode = {};
+	tokens = {};
 	possibleTypes = {};
 	types = {};
 	fields = {};
@@ -14,9 +14,9 @@ CppClass::CppClass() {
 	classGraph = {};
 }
 
-CppClass::CppClass(vector<string> lexemes, vector<string> possibleTypes) {
-	classCode = lexemes;
-	name = lexemes[0];
+CppClass::CppClass(vector<string> tokens, vector<string> possibleTypes) {
+	this->tokens = tokens;
+	name = tokens[1];
 	this->possibleTypes = possibleTypes;
 	types = {};
 	GetFields();
@@ -32,7 +32,7 @@ CppClassGraph CppClass::GetClassGraph() {
 	int fieldsSize = fields.size(),
 		methodsSize = methods.size(),
 		constructorsSize = constructors.size(),
-		destructorsSize = (destructor.destructorCode.size() == 0) ? 0 : 1,
+		destructorsSize = (destructor.tokens.size() == 0) ? 0 : 1,
 		fieldsAndMethodsSize = fieldsSize + methodsSize + constructorsSize + destructorsSize;
 	for (int i = 0; i < fieldsAndMethodsSize; i++)
 		classGraphMatrixLine.push_back(false);
@@ -55,7 +55,8 @@ CppClassGraph CppClass::GetClassGraph() {
 		}
 		for (j; j < fieldsSize + methodsSize; j++) {
 			int ind = j - fieldsSize;
-			if (fields[i].value.substr(0, methods[ind].name.size()) == fields[ind].name) {
+			if (methods[ind].name.size() < fields[i].value.size() && 
+				fields[i].value.substr(0, methods[ind].name.size()) == fields[ind].name) {
 				classGraphMatrix[i][j] = true;
 				classGraphMatrix[j][i] = true;
 			}
@@ -108,16 +109,16 @@ CppClassGraph CppClass::GetClassGraph() {
 	for (i; i < fieldsSize + methodsSize + constructorsSize; i++) {
 		int ind = i - (fieldsSize + methodsSize);
 		for (j = 0; j < fieldsSize; j++)
-			for (string lexeme : constructors[ind].constructorCode)
-				if (lexeme == fields[j].name) {
+			for (string token : constructors[ind].tokens)
+				if (token == fields[j].name) {
 					classGraphMatrix[i][j] = true;
 					classGraphMatrix[j][i] = true;
 					break;
 				}
 		for (j; j < fieldsSize + methodsSize; j++) {
 			int indj = j - fieldsSize;
-			for (string lexeme : constructors[ind].constructorCode)
-				if (lexeme == methods[indj].name) {
+			for (string token : constructors[ind].tokens)
+				if (token == methods[indj].name) {
 					classGraphMatrix[i][j] = true;
 					classGraphMatrix[j][i] = true;
 					break;
@@ -125,20 +126,21 @@ CppClassGraph CppClass::GetClassGraph() {
 		}
 		for (j; j < fieldsSize + methodsSize + constructorsSize; j++) {
 			int indj = j - (fieldsSize + methodsSize);
-			for (int k = 0; k < constructors[indj].constructorCode.size(); k++)
-				if (constructors[indj].constructorCode[k] == name &&
-					constructors[indj].constructorCode[k + 1] == "(" &&
-					k < constructors[indj].constructorCode.size() - 1) {
+			for (int k = 0; k < constructors[indj].tokens.size(); k++)
+				if (constructors[indj].tokens[k] == name &&
+					constructors[indj].tokens[k + 1] == "(" &&
+					k < constructors[indj].tokens.size() - 1) {
 					int parametersSize = 0;
-					if (constructors[indj].constructorCode[k + 2] != ")") {
+					if (constructors[indj].tokens[k + 2] != ")") {
 						parametersSize++;
 						int depth = 0;
-						for (int l = k + 2; l < constructors[indj].constructorCode.size(); l++) {
-							if (constructors[indj].constructorCode[l] == "," && depth == 0)
+						for (int l = k + 2; l < constructors[indj].tokens.size(); l++) {
+							if (constructors[indj].tokens[l] == "," && 
+								depth == 0)
 								parametersSize++;
-							if (constructors[indj].constructorCode[l] == "(")
+							if (constructors[indj].tokens[l] == "(")
 								depth++;
-							if (constructors[indj].constructorCode[l] == ")") {
+							if (constructors[indj].tokens[l] == ")") {
 								if (depth > 1)
 									depth--;
 								else
@@ -156,15 +158,15 @@ CppClassGraph CppClass::GetClassGraph() {
 	if (destructorsSize != 0) {
 		int ind = i - (fieldsSize + methodsSize + constructorsSize);
 		for (j = 0; j < fieldsSize; j++)
-			for (string lexeme : destructor.destructorCode)
-				if (lexeme == fields[j].name) {
+			for (string token : destructor.tokens)
+				if (token == fields[j].name) {
 					classGraphMatrix[i][j] = true;
 					classGraphMatrix[j][i] = true;
 				}
 		for (j; j < fieldsSize + methodsSize; j++) {
 			int indj = j - fieldsSize;
-			for (string lexeme : destructor.destructorCode)
-				if (lexeme == methods[indj].name) {
+			for (string token : destructor.tokens)
+				if (token == methods[indj].name) {
 					classGraphMatrix[i][j] = true;
 					classGraphMatrix[j][i] = true;
 					break;
@@ -172,20 +174,20 @@ CppClassGraph CppClass::GetClassGraph() {
 		}
 		for (j; j < fieldsSize + methodsSize + constructorsSize; j++) {
 			int indj = j - (fieldsSize + methodsSize);
-			for (int k = 0; k < destructor.destructorCode.size(); k++)
-				if (destructor.destructorCode[k] == name &&
-					destructor.destructorCode[k + 1] == "(" &&
-					k < destructor.destructorCode.size() - 1) {
+			for (int k = 0; k < destructor.tokens.size(); k++)
+				if (destructor.tokens[k] == name &&
+					destructor.tokens[k + 1] == "(" &&
+					k < destructor.tokens.size() - 1) {
 					int parametersSize = 0;
-					if (destructor.destructorCode[k + 2] != ")") {
+					if (destructor.tokens[k + 2] != ")") {
 						parametersSize++;
 						int depth = 0;
-						for (int l = k + 2; l < destructor.destructorCode.size(); l++) {
-							if (destructor.destructorCode[l] == "," && depth == 0)
+						for (int l = k + 2; l < destructor.tokens.size(); l++) {
+							if (destructor.tokens[l] == "," && depth == 0)
 								parametersSize++;
-							if (destructor.destructorCode[l] == "(")
+							if (destructor.tokens[l] == "(")
 								depth++;
-							if (destructor.destructorCode[l] == ")") {
+							if (destructor.tokens[l] == ")") {
 								if (depth > 1)
 									depth--;
 								else
@@ -211,43 +213,44 @@ CppClassGraph CppClass::GetClassGraph() {
 }
 
 void CppClass::GetFields() {
-	vector<CppClassField> classFields = {};
-	vector<string> lexemes = this->classCode;
-	int lexemesSize = lexemes.size(),
+	vector<CppClassField> classFields = {},
+		classFieldsFin = {};
+	vector<string> tokens = this->tokens;
+	int tokensSize = tokens.size(),
 		start = -1,
 		j = 0;
-	AccessMode fieldAccessMode = AccessMode::Null;
+	AccessMode fieldAccessMode = AccessMode::Private;
 	CppClassField classField = {};
-	for (int i = 0; i < lexemesSize; i++) {
-		string fieldType = "",
-			fieldName = "";
-		fieldAccessMode = AccessMode::Null;
+	string fieldType = "";
+	for (int i = 0; i < tokensSize; i++) {
+		string fieldName = "";
+		fieldAccessMode = AccessMode::Private;
 		classField = {};
 		int depth = 1;
 		for (string type : possibleTypes)
-			if ((lexemes[i] == type) || (lexemes[i] == ",")) {
-				if (lexemes[i] == type) {
-					fieldType = lexemes[i];
+			if ((tokens[i] == type) || (tokens[i] == ",")) {
+				if (tokens[i] == type) {
+					fieldType = tokens[i];
 					types.insert(fieldType);
 					break;
 				}
-				else if (lexemes[i] == ",") {
+				else if (tokens[i] == ",") {
 					for (j = 0; j < i; j++) {
-						if (lexemes[j] == "{")
+						if (tokens[j] == "{")
 							depth++;
-						if (lexemes[j] == "}")
+						if (tokens[j] == "}")
 							depth--;
 					}
 					if (depth == 1) {
-						while (lexemes[j] != type)
+						while (tokens[j] != fieldType)
 							j--;
-						fieldType = lexemes[j];
+						fieldType = tokens[j];
 					}
 					else {
-						for (j = i; j < lexemesSize; j++) {
-							if (lexemes[j] == "{")
+						for (j = i; j < tokensSize; j++) {
+							if (tokens[j] == "{")
 								depth++;
-							if (lexemes[j] == "}") {
+							if (tokens[j] == "}") {
 								if (depth > 2)
 									depth--;
 								else
@@ -259,50 +262,75 @@ void CppClass::GetFields() {
 					}
 				}
 			}
-		if (fieldType != "") {
-			fieldName = lexemes[i + 1];
-			j = i;
-			while (!((lexemes[j] == "private") ||
-				(lexemes[j] == "public") ||
-				(lexemes[j] == "protected")))
-				j--;
-			if (lexemes[j] == "private")
+		if (i < (tokensSize - 1) && fieldType != "") {
+			for (int k = i; k < tokensSize - 1; k += 3) {
+				fieldName = tokens[k + 1];
+				if (k < tokensSize - 2 && fieldName == ",")
+					fieldName = tokens[k + 2];
+				if (k < tokensSize - 3 && fieldName == "\n")
+					fieldName = tokens[k + 3];
+				if (fieldName == "\n" || 
+					fieldName == "," || 
+					fieldName == ";" || 
+					fieldName == "(" || 
+					fieldName == name)
+					break;
+				j = k;
 				fieldAccessMode = AccessMode::Private;
-			else if (lexemes[j] == "public")
-				fieldAccessMode = AccessMode::Public;
-			else if (lexemes[j] == "protected")
-				fieldAccessMode = AccessMode::Protected;
-			classField.type = fieldType;
-			classField.name = fieldName;
-			classField.accessMode = fieldAccessMode;
-			classFields.push_back(classField);
+				while (j > 0 && 
+					!((tokens[j] == "private:") ||
+					(tokens[j] == "public:") ||
+					(tokens[j] == "protected:")))
+					j--;
+				if (tokens[j] == "private:")
+					fieldAccessMode = AccessMode::Private;
+				else if (tokens[j] == "public:")
+					fieldAccessMode = AccessMode::Public;
+				else if (tokens[j] == "protected:")
+					fieldAccessMode = AccessMode::Protected;
+				classField.type = fieldType;
+				classField.name = fieldName;
+				classField.accessMode = fieldAccessMode;
+				classFields.push_back(classField);
+			}
 		}
 	}
-	this->fields = classFields;
+	for (CppClassField field : classFields) {
+		bool exists = false;
+		for (CppClassField finField : classFieldsFin) {
+			if (finField.name == field.name) {
+				exists = true;
+				break;
+			}
+		}
+		if (!exists)
+			classFieldsFin.push_back(field);
+	}
+	this->fields = classFieldsFin;
 }
 
 void CppClass::GetMethods() {
 	vector<CppClassMethod> methods = {};
-	vector<string> lexemes = this->classCode,
+	vector<string> tokens = this->tokens,
 		types = possibleTypes;
-	int lexemesSize = lexemes.size(),
+	int tokensSize = tokens.size(),
 		typesSize = types.size();
 	CppClassMethod newMethod = {};
-	for (int i = 0; i < lexemesSize; i++) {
-		vector<string> curMethodLexemes = {};
+	for (int i = 0; i < tokensSize; i++) {
+		vector<string> curMethodTokens = {};
 		bool isType = false;
 		for (int j = 0; j < typesSize && !isType; j++) {
-			isType = ((lexemes[i] == types[j]) &&
-				(i < lexemesSize - 2) &&
-				(lexemes[i + 2] == "("));
+			isType = ((tokens[i] == types[j]) &&
+				(i < tokensSize - 2) &&
+				(tokens[i + 2] == "("));
 		}
 		if (isType) {
 			int depth = 1,
 				k = 0;
-			for (k = i; k < lexemesSize; k++) {
-				if (lexemes[k] == "{")
+			for (k = i; k < tokensSize; k++) {
+				if (tokens[k] == "{")
 					depth++;
-				if (lexemes[k] == "}") {
+				if (tokens[k] == "}") {
 					if (depth > 2)
 						depth--;
 					else
@@ -310,20 +338,23 @@ void CppClass::GetMethods() {
 				}
 			}
 			for (int l = i; l < k; l++) {
-				curMethodLexemes.push_back(lexemes[l]);
+				curMethodTokens.push_back(tokens[l]);
 			}
-			curMethodLexemes.push_back("}");
-			newMethod = CppClassMethod(curMethodLexemes, this->name, this->classCode, this->fields, this->methods, this->constructors);
+			curMethodTokens.push_back("}");
+			curMethodTokens.push_back("\n");
+			curMethodTokens.push_back("\n");
+			newMethod = CppClassMethod(curMethodTokens, this->name, this->tokens, this->fields, this->methods, this->constructors);
+			newMethod.accessMode = AccessMode::Private;
 			for (int j = i; j >= 0; j--) {
-				if (lexemes[j] == "private") {
+				if (tokens[j] == "private:") {
 					newMethod.accessMode = AccessMode::Private;
 					break;
 				}
-				else if (lexemes[j] == "public") {
+				else if (tokens[j] == "public:") {
 					newMethod.accessMode = AccessMode::Public;
 					break;
 				}
-				else if (lexemes[j] == "protected") {
+				else if (tokens[j] == "protected:") {
 					newMethod.accessMode = AccessMode::Protected;
 					break;
 				}
@@ -337,20 +368,22 @@ void CppClass::GetMethods() {
 
 void CppClass::GetConstructors() {
 	vector<CppClassConstructor> constructors = {};
-	vector<string> lexemes = this->classCode,
+	vector<string> tokens = this->tokens,
 		types = possibleTypes;
-	int lexemesSize = lexemes.size(),
+	int tokensSize = tokens.size(),
 		typesSize = types.size();
 	CppClassConstructor newConstructor = {};
-	for (int i = 0; i < lexemesSize; i++) {
-		vector<string> curMethodLexemes = {};
-		if (lexemes[i] == name) {
+	for (int i = 0; i < tokensSize; i++) {
+		vector<string> curMethodTokens = {};
+		if (i > 0 && 
+			tokens[i - 1] != "class" && 
+			tokens[i] == name) {
 			int depth = 1,
 				k = 0;
-			for (k = i; k < lexemesSize; k++) {
-				if (lexemes[k] == "{")
+			for (k = i; k < tokensSize; k++) {
+				if (tokens[k] == "{")
 					depth++;
-				if (lexemes[k] == "}") {
+				if (tokens[k] == "}") {
 					if (depth > 2)
 						depth--;
 					else
@@ -358,24 +391,27 @@ void CppClass::GetConstructors() {
 				}
 			}
 			for (int l = i; l < k; l++)
-				curMethodLexemes.push_back(lexemes[l]);
-			curMethodLexemes.push_back("}");
+				curMethodTokens.push_back(tokens[l]);
+			curMethodTokens.push_back("}");
+			curMethodTokens.push_back("\n");
+			curMethodTokens.push_back("\n");
+			newConstructor.accessMode = AccessMode::Private;
 			for (int j = i; j >= 0; j--) {
-				if (lexemes[j] == "private") {
+				if (tokens[j] == "private:") {
 					newConstructor.accessMode = AccessMode::Private;
 					break;
 				}
-				else if (lexemes[j] == "public") {
+				else if (tokens[j] == "public:") {
 					newConstructor.accessMode = AccessMode::Public;
 					break;
 				}
-				else if (lexemes[j] == "protected") {
+				else if (tokens[j] == "protected:") {
 					newConstructor.accessMode = AccessMode::Protected;
 					break;
 				}
 			}
 			i = k;
-			newConstructor.constructorCode = curMethodLexemes;
+			newConstructor.tokens = curMethodTokens;
 			constructors.push_back(newConstructor);
 		}
 	}
@@ -383,21 +419,20 @@ void CppClass::GetConstructors() {
 }
 
 void CppClass::GetDestructor() {
-	vector<string> destructorCode = {};
-	vector<string> lexemes = this->classCode,
+	vector<string> tokens = this->tokens,
 		types = possibleTypes;
-	int lexemesSize = lexemes.size(),
+	int tokensSize = tokens.size(),
 		typesSize = types.size();
-	for (int i = 0; i < lexemesSize; i++) {
-		vector<string> curMethodLexemes = {};
-		if (lexemes[i] == name && 
-			(lexemes[i - 1] == "~" && i > 0)) {
+	for (int i = 0; i < tokensSize; i++) {
+		vector<string> curMethodTokens = {};
+		if (i > 0 && tokens[i] == name && 
+			(tokens[i - 1] == "~")) {
 			int depth = 1,
 				k = 0;
-			for (k = i; k < lexemesSize; k++) {
-				if (lexemes[k] == "{")
+			for (k = i; k < tokensSize; k++) {
+				if (tokens[k] == "{")
 					depth++;
-				if (lexemes[k] == "}") {
+				if (tokens[k] == "}") {
 					if (depth > 2)
 						depth--;
 					else
@@ -405,20 +440,23 @@ void CppClass::GetDestructor() {
 				}
 			}
 			for (int l = i; l < k; l++)
-				destructorCode.push_back(lexemes[l]);
-			destructorCode.push_back("}");
+				tokens.push_back(tokens[l]);
+			tokens.push_back("}");
+			tokens.push_back("\n");
+			tokens.push_back("\n");
 			CppClassDestructor destructor = {};
-			destructor.destructorCode = destructorCode;
+			destructor.tokens = tokens;
+			destructor.accessMode = AccessMode::Private;
 			for (int j = i; j >= 0; j--) {
-				if (lexemes[j] == "private") {
+				if (tokens[j] == "private:") {
 					destructor.accessMode = AccessMode::Private;
 					break;
 				}
-				else if (lexemes[j] == "public") {
+				else if (tokens[j] == "public:") {
 					destructor.accessMode = AccessMode::Public;
 					break;
 				}
-				else if (lexemes[j] == "protected") {
+				else if (tokens[j] == "protected:") {
 					destructor.accessMode = AccessMode::Protected;
 					break;
 				}
@@ -429,8 +467,45 @@ void CppClass::GetDestructor() {
 	}
 }
 
+void CppClass::CreateConstructor() {
+	if (this->constructors.size() == 0) {
+		CppClassConstructor newConstructor = {};
+		newConstructor.accessMode = AccessMode::Public;
+		newConstructor.parameters = {};
+		for (CppClassField field : fields) {
+			Parameter newParameter = {};
+			newParameter.type = field.type;
+			newParameter.name = field.name;
+			newConstructor.parameters.push_back(newParameter);
+		}
+		newConstructor.tokens = {};
+		newConstructor.tokens.push_back(name);
+		newConstructor.tokens.push_back("(");
+		for (Parameter parameter : newConstructor.parameters) {
+			newConstructor.tokens.push_back(parameter.type);
+			newConstructor.tokens.push_back(parameter.name);
+			newConstructor.tokens.push_back(",");
+		}
+		newConstructor.tokens.pop_back();
+		newConstructor.tokens.push_back(")");
+		newConstructor.tokens.push_back("{");
+		newConstructor.tokens.push_back("\n");
+		for (CppClassField field : fields) {
+			newConstructor.tokens.push_back("this->");
+			newConstructor.tokens.push_back(field.name);
+			newConstructor.tokens.push_back("=");
+			newConstructor.tokens.push_back(field.name);
+			newConstructor.tokens.push_back(";");
+			newConstructor.tokens.push_back("\n");
+		}
+		newConstructor.tokens.push_back("}");
+		newConstructor.tokens.push_back("\n");
+		this->constructors.push_back(newConstructor);
+	}
+}
+
 void CppClass::UpdateClass() {
-	classCode = ToLexemes();
+	tokens = ToTokens();
 	GetFields();
 	GetMethods();
 	GetConstructors();
@@ -439,12 +514,12 @@ void CppClass::UpdateClass() {
 }
 
 void CppClass::UpdateFields() {
-	classCode = ToLexemes();
+	tokens = ToTokens();
 	GetFields();
 }
 
 void CppClass::UpdateMethods() {
-	classCode = ToLexemes();
+	tokens = ToTokens();
 	GetMethods();
 }
 
@@ -463,96 +538,109 @@ bool CppClass::GetFlag(AccessMode accessMode) {
 	return false;
 }
 
-vector<string> CppClass::GetLexemes(AccessMode accessMode) {
-	vector<string> lexemes = {};
+vector<string> CppClass::GetTokens(AccessMode accessMode) {
+	vector<string> tokens = {};
 	for (CppClassField field : fields)
 		if (field.accessMode == accessMode) {
-			lexemes.push_back(field.type);
-			lexemes.push_back(field.name);
+			tokens.push_back("\n");
+			tokens.push_back(field.type);
+			tokens.push_back(field.name);
 			if (field.value != "") {
-				lexemes.push_back("=");
-				lexemes.push_back(field.value);
+				tokens.push_back("=");
+				tokens.push_back(field.value);
 			}
+			tokens.push_back(";");
 		}
+	if (fields.size() != 0)
+		tokens.push_back("\n");
 	for (CppClassConstructor constructor : constructors)
 		if (constructor.accessMode == accessMode) {
-			lexemes.push_back(name);
-			lexemes.push_back("(");
-			for (Parameter parameter : constructor.parameters) {
-				lexemes.push_back(parameter.type);
-				if (parameter.pointer)
-					lexemes.push_back("*");
-				lexemes.push_back(parameter.name);
-				if (parameter.defaultValue != "") {
-					lexemes.push_back("=");
-					lexemes.push_back(parameter.defaultValue);
-				}
-				if (parameter.name != constructor.parameters[constructor.parameters.size() - 1].name)
-					lexemes.push_back(",");
-			}
-			lexemes.push_back(")");
-			for (string lexeme : constructor.constructorCode)
-				lexemes.push_back(lexeme);
+			for (string token : constructor.tokens)
+				tokens.push_back(token);
 		}
 	for (CppClassMethod method : methods)
 		if (method.accessMode == accessMode) {
-			lexemes.push_back(method.type);
-			lexemes.push_back(method.name);
-			lexemes.push_back("(");
+			tokens.push_back(method.type);
+			tokens.push_back(method.name);
+			tokens.push_back("(");
 			for (Parameter parameter : method.parameters) {
-				lexemes.push_back(parameter.type);
+				tokens.push_back(parameter.type);
 				if (parameter.pointer)
-					lexemes.push_back("*");
-				lexemes.push_back(parameter.name);
+					tokens.push_back("*");
+				tokens.push_back(parameter.name);
 				if (parameter.defaultValue != "") {
-					lexemes.push_back("=");
-					lexemes.push_back(parameter.defaultValue);
+					tokens.push_back("=");
+					tokens.push_back(parameter.defaultValue);
 				}
 				if (parameter.name != method.parameters[method.parameters.size() - 1].name)
-					lexemes.push_back(",");
+					tokens.push_back(",");
 			}
-			lexemes.push_back(")");
-			for (string lexeme : method.body)
-				lexemes.push_back(lexeme);
+			tokens.push_back(")");
+			for (string token : method.body)
+				tokens.push_back(token);
+			//tokens.push_back("\n");
 		}
 	if (destructor.accessMode == accessMode) {
-		lexemes.push_back("~");
-		lexemes.push_back(name);
-		lexemes.push_back("(");
-		lexemes.push_back(")");
-		for (string lexeme : destructor.destructorCode)
-			lexemes.push_back(lexeme);
+		if (destructor.tokens.size() != 0) {
+			tokens.push_back("~");
+			tokens.push_back(name);
+			tokens.push_back("(");
+			tokens.push_back(")");
+			for (string token : destructor.tokens)
+				tokens.push_back(token);
+		}
 	}
-	return lexemes;
+	if (tokens[tokens.size() - 1] == "\n" && tokens[tokens.size() - 2] == "\n")
+		tokens.pop_back();
+	return tokens;
 }
 
-vector<string> CppClass::ToLexemes() {
-	vector<string> lexemes = {},
-		newLexemes = {};
-	lexemes.push_back("class");
-	lexemes.push_back(name);
-	lexemes.push_back("{");
+vector<string> CppClass::ToTokens() {
+	vector<string> tokens = {},
+		newTokens = {};
+	tokens.push_back("class");
+	tokens.push_back(name);
+	tokens.push_back("{");
+	tokens.push_back("\n");
 	bool publicFlag = GetFlag(AccessMode::Public),
 		privateFlag = GetFlag(AccessMode::Private),
 		protectedFlag = GetFlag(AccessMode::Protected);
-	if (publicFlag) {
-		lexemes.push_back("public:");
-		newLexemes = GetLexemes(AccessMode::Public);
-		for (string lexeme : newLexemes)
-			lexemes.push_back(lexeme);
+	if (publicFlag || privateFlag || protectedFlag) {
+		if (publicFlag) {
+			newTokens = GetTokens(AccessMode::Public);
+			if (newTokens.size() != 0) {
+				tokens.push_back("public:");
+				for (string token : newTokens)
+					tokens.push_back(token);
+			}
+		}
+		if (privateFlag) {
+			newTokens = GetTokens(AccessMode::Private);
+			if (newTokens.size() != 0) {
+				tokens.push_back("private:");
+				for (string lexeme : newTokens)
+					tokens.push_back(lexeme);
+			}
+		}
+		if (protectedFlag) {
+			newTokens = GetTokens(AccessMode::Protected);
+			if (newTokens.size() != 0) {
+				tokens.push_back("protected:");
+				for (string lexeme : newTokens)
+					tokens.push_back(lexeme);
+			}
+		}
 	}
-	if (privateFlag) {
-		lexemes.push_back("private:");
-		newLexemes = GetLexemes(AccessMode::Private);
-		for (string lexeme : newLexemes)
-			lexemes.push_back(lexeme);
+	else {
+		newTokens = GetTokens(AccessMode::Private);
+		if (newTokens.size() != 0) {
+			tokens.push_back("private:");
+			for (string lexeme : newTokens)
+				tokens.push_back(lexeme);
+		}
 	}
-	if (protectedFlag) {
-		lexemes.push_back("protected:");
-		newLexemes = GetLexemes(AccessMode::Protected);
-		for (string lexeme : newLexemes)
-			lexemes.push_back(lexeme);
-	}
-	lexemes.push_back("}");
-	return lexemes;
+	tokens.push_back("}");
+	//tokens.push_back(";");
+	tokens.push_back("\n");
+	return tokens;
 }

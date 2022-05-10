@@ -3,34 +3,36 @@
 
 /// <summary>ѕараметр метода</summary>
 struct Parameter {
-    std::string type,               // тип значени€
-        name,                       // название переменной
-        defaultValue;
-    bool pointer,
-        reference;
+    std::string type,   // тип значени€
+        name,           // название переменной
+        defaultValue;   // значение по умолчанию
+    bool pointer,       // передаетс€ ли указатель
+        reference;      // передаетс€ ли перемена€ по ссылке
 };
 
+/// <summary>ћодификатор доступа</summary>
 enum class AccessMode {
     Public,
     Private,
-    Protected,
-    Null
+    Protected
 };
 
+/// <summary> онструктор объекта класса</summary>
 struct CppClassConstructor {
-    std::vector<Parameter> parameters;
-    std::vector<std::string> constructorCode;
-    AccessMode accessMode;
+    std::vector<Parameter> parameters;  // параметры конструктора
+    std::vector<std::string> tokens;    // токены кода конструктора
+    AccessMode accessMode;              // модификатор доступа
 };
 
+/// <summary>ƒеструктор объекта класса</summary>
 struct CppClassDestructor {
-    std::vector<std::string> destructorCode;
-    AccessMode accessMode;
+    std::vector<std::string> tokens;    // токены кода деструктора
+    AccessMode accessMode;              // модификатор доступа
 };
 
 /// <summary>¬ызов метода</summary>
 struct MethodCall {
     std::string methodName;                     // название метода
     std::vector<std::string> parameterValues;   // список значений параметров
-    std::vector<bool> isReference;
+    std::vector<bool> isReference;              // передаетс€ ли переменна€ по ссылке
 };

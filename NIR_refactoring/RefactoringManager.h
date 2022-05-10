@@ -55,13 +55,28 @@ public:
     /// <returns>новый метод</returns>
     CppMethod RemoveParameters(CppMethod method);
 
+    /// <summary>Проведение рефакторинга методом передачи всего объекта</summary>
+    /// <param name="code">- исходный код программы</param>
     void SendFullObjectProc(CppCode code);
 
+    /// <summary>Копирование метода для передачи всего объекта</summary>
+    /// <param name="method">- метод, который будет скопирован</param>
+    /// <param name="object">- объект, используемый в копируемом методе</param>
+    /// <param name="methodCall">- вызов копируемого метода</param>
+    /// <returns>Новый метод, принимающий объект целиком и вызов данного метода</returns>
     MethodSendFullObject SendFullObject(CppMethod method, Object object, MethodCall methodCall);
 
+    /// <summary>Проведение рефакторинга методом извлечения класса</summary>
+    /// <param name="code">- исходный код программы</param>
     void ExtractClassProc(CppCode code);
 
+    /// <summary>Извлечение класса</summary>
+    /// <param name="cppClass">- класс, из которого будет извлечен новый класс</param>
+    /// <param name="methodsNums">- номера методов, которые будут перемещены в новый класс</param>
+    /// <returns>Два новых класса, полученных из исходного</returns>
     CppClasses ExtractClass(CppClass cppClass, vector<int> methodsNums);
+
+    set<int> GetMethodNumbers(string input);
 
     /// <summary>Составление названия файла, в котором будет содержаться измененный код</summary>
     /// <param name="filePath">- полное название исходного файла</param>

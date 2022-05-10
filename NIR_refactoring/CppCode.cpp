@@ -4,7 +4,7 @@
 
 CppCode::CppCode() {
     this->cppCode = "";
-    this->lexemes = {};
+    this->tokens = {};
     this->methods = {};
     this->types = {};
     this->keyWordsSet = {};
@@ -15,10 +15,10 @@ CppCode::CppCode() {
 /// <summary>Конструктор класса</summary>
 CppCode::CppCode(string cppCode) {
     this->cppCode = cppCode;
-    this->lexemes = this->GetLexemes();
+    this->tokens = this->GetTokens();
     this->methods = this->GetMethods();
     this->types = this->GetStdTypes();
-    //this->classes = this->GetClasses();
+    this->classes = this->GetClasses();
     this->keyWordsSet = {
         "#include", "include", "export", "module",
         "#define", "#undef",
@@ -111,30 +111,30 @@ string CppCode::Modify() {
 }
 
 /// <summary>Разбиение кода на лексемы</summary>
-vector<string> CppCode::GetLexemes() {
+vector<string> CppCode::GetTokens() {
     setlocale(LC_ALL, "Russian");
-    vector<string> vec_lexemes = {};
+    vector<string> tokens = {};
     const char* separators = " \n\t";
     string modCppCode = this->Modify();
     istringstream ssCppCode(modCppCode + " ₽₴.");
     while (1) {
-        string lexeme = "";
-        ssCppCode >> lexeme;
-        if (lexeme == "₽₴.")
+        string token = "";
+        ssCppCode >> token;
+        if (token == "₽₴.")
             break;
-        else if (lexeme == "₴₽₽.")
-            vec_lexemes.push_back("\n");
-        else if (lexeme == "₴₽₴₽.")
-            vec_lexemes.push_back("\t");
-        else if (lexeme != "")
-            vec_lexemes.push_back(lexeme);
+        else if (token == "₴₽₽.")
+            tokens.push_back("\n");
+        else if (token == "₴₽₴₽.")
+            tokens.push_back("\t");
+        else if (token != "")
+            tokens.push_back(token);
     }
-    return vec_lexemes;
+    return tokens;
 }
 
 /// <summary>Разбиение кода на лексемы</summary>
-vector<string> CppCode::GetLexemesV2() {
-    vector<string> vec_lexemes = {};
+vector<string> CppCode::GetTokensV2() {
+    vector<string> tokens = {};
     string cppCode = this->cppCode;
     int lenOfCppCode = cppCode.length();
     for (int i = 0; i < lenOfCppCode; i++)
@@ -142,24 +142,24 @@ vector<string> CppCode::GetLexemesV2() {
             string codeSubStr = cppCode.substr(i, j);
             for (string str : this->keyWordsSet)
                 if (codeSubStr == str) {
-                    vec_lexemes.push_back(codeSubStr);
+                    tokens.push_back(codeSubStr);
                     i = j;
                     break;
                 }
             for (string str : this->types)
                 if (codeSubStr == str) {
-                    vec_lexemes.push_back(codeSubStr);
+                    tokens.push_back(codeSubStr);
                     i = j;
                     break;
                 }
             for (string str : this->specSymbolsSet)
                 if (codeSubStr == str) {
-                    vec_lexemes.push_back(codeSubStr);
+                    tokens.push_back(codeSubStr);
                     i = j;
                     break;
                 }
             if (regex_match(codeSubStr, regex("[a-zA-Z0-9_]+"))) {
-                vec_lexemes.push_back(codeSubStr);
+                tokens.push_back(codeSubStr);
                 i = j;
                 break;
             }
@@ -172,12 +172,12 @@ vector<string> CppCode::GetLexemesV2() {
 /// <returns>вектор пользовательских типов данных</returns>
 vector<string> CppCode::GetTypes(string type) {
     vector<string> types = {},
-        lexemes = this->lexemes;
-    int lexemesSize = lexemes.size();
-    for (int i = 0; i < lexemesSize; i++)
-        if (lexemes[i] == type) {
-            bool mode2 = (type == "typedef" || (type == "enum" && lexemes[i + 1] == "class"));
-            types.push_back(lexemes[i + (mode2 ? 2 : 1)]);
+        tokens = this->tokens;
+    int tokensSize = tokens.size();
+    for (int i = 0; i < tokensSize; i++)
+        if (tokens[i] == type) {
+            bool mode2 = (type == "typedef" || (type == "enum" && tokens[i + 1] == "class"));
+            types.push_back(tokens[i + (mode2 ? 2 : 1)]);
         }
     return types;
 }
@@ -187,7 +187,7 @@ vector<string> CppCode::GetTypes(string type) {
 vector<CppMethod> CppCode::GetMethods() {
     vector<CppMethod> methods = {};
     vector<string> types = this->GetStdTypes(),
-        lexemes = this->lexemes,
+        tokens = this->tokens,
         typedefs = this->GetTypes("typedef"),
         structs = this->GetTypes("struct"),
         unions = this->GetTypes("union"),
@@ -207,21 +207,21 @@ vector<CppMethod> CppCode::GetMethods() {
     for (int i = 0; i < classes.size(); i++)
         types.push_back(classes[i]);
     int typesSize = types.size(),
-        lexemesSize = lexemes.size();
-    for (int i = 0; i < lexemesSize; i++) {
+        tokensSize = tokens.size();
+    for (int i = 0; i < tokensSize; i++) {
         vector<string> curMethod = {};
         bool isType = false;
         for (int j = 0; j < typesSize && !isType; j++)
-            isType = ((lexemes[i] == types[j]) &&
-                (i < lexemesSize - 2) &&
-                (lexemes[i + 2] == "("));
+            isType = ((tokens[i] == types[j]) &&
+                (i < tokensSize - 2) &&
+                (tokens[i + 2] == "("));
         if (isType) {
             int depth = 0,
                 k = 0;
-            for (k = i; k < lexemesSize; k++) {
-                if (lexemes[k] == "{")
+            for (k = i; k < tokensSize; k++) {
+                if (tokens[k] == "{")
                     depth++;
-                if (lexemes[k] == "}") {
+                if (tokens[k] == "}") {
                     if (depth > 1)
                         depth--;
                     else
@@ -229,7 +229,7 @@ vector<CppMethod> CppCode::GetMethods() {
                 }
             }
             for (int l = i; l < k; l++)
-                curMethod.push_back(lexemes[l]);
+                curMethod.push_back(tokens[l]);
             curMethod.push_back("}");
             i = k;
             methods.push_back(CppMethod(curMethod));
@@ -240,17 +240,17 @@ vector<CppMethod> CppCode::GetMethods() {
 
 vector<CppClass> CppCode::GetClasses() {
     vector<CppClass> classes = {};
-    vector<string> lexemes = this->lexemes,
-        newClassLexemes = {};
-    int lexemesSize = lexemes.size(),
+    vector<string> tokens = this->tokens,
+        newClassTokens = {};
+    int tokensSize = tokens.size(),
         j = 0,
         depth = 0;
-    for (int i = 0; i < lexemesSize; i++)
-        if (lexemes[i] == "class" && (i > 0 && lexemes[i - 1] != "enum")) {
-            for (j = i; j < lexemesSize; j++) {
-                if (lexemes[j] == "{")
+    for (int i = 0; i < tokensSize; i++)
+        if (tokens[i] == "class" && (i > 0 && tokens[i - 1] != "enum")) {
+            for (j = i; j < tokensSize; j++) {
+                if (tokens[j] == "{")
                     depth++;
-                if (lexemes[j] == "}") {
+                if (tokens[j] == "}") {
                     if (depth > 1)
                         depth--;
                     else
@@ -258,17 +258,17 @@ vector<CppClass> CppCode::GetClasses() {
                 }
             }
             for (int k = i; k < j; k++)
-                newClassLexemes.push_back(lexemes[k]);
-            newClassLexemes.push_back("}");
+                newClassTokens.push_back(tokens[k]);
+            newClassTokens.push_back("}");
             i = j;
-            classes.push_back(CppClass(newClassLexemes, this->types));
+            classes.push_back(CppClass(newClassTokens, this->types));
         }
     return classes;
 }
 
 vector<MethodCall> CppCode::GetMethodCalls(CppMethod cppMethod) {
-    vector<string> lexemes = this->lexemes;
-    int lexemesSize = lexemes.size(),
+    vector<string> tokens = this->tokens;
+    int tokensSize = tokens.size(),
         parametersSize = cppMethod.parameters.size(),
         j = 0,
         k = 0,
@@ -276,28 +276,28 @@ vector<MethodCall> CppCode::GetMethodCalls(CppMethod cppMethod) {
     string cppMethodName = cppMethod.name,
         parameterValue = "";
     vector<MethodCall> methodCalls = {};
-    for (int i = 0; i < lexemes.size(); i++)
-        if (lexemes[i] == cppMethodName) {
+    for (int i = 0; i < tokens.size(); i++)
+        if (tokens[i] == cppMethodName) {
             MethodCall methodCall = {};
             methodCall.methodName = cppMethodName;
             methodCall.parameterValues = {};
             depth = 0;
-            lexemesSize = lexemes.size();
-            for (j = i + 1; j < lexemesSize; j++) {
-                if (lexemes[j] == "(")
+            tokensSize = tokens.size();
+            for (j = i + 1; j < tokensSize; j++) {
+                if (tokens[j] == "(")
                     depth++;
-                if (lexemes[j] == ")") {
+                if (tokens[j] == ")") {
                     if (depth > 1)
                         depth--;
                     else
                         break;
                 }
             }
-            if (j < lexemesSize - 1 && lexemes[j + 1] != "{") {
+            if (j < tokensSize - 1 && tokens[j + 1] != "{") {
                 parameterValue = "";
                 for (k = i + 2; k < j + 1; k++) {
-                    if (lexemes[k] != "," && k != j)
-                        parameterValue += (lexemes[k] + (lexemes[k + 1] == ")" || lexemes[k + 1] == "," ? "" : " "));
+                    if (tokens[k] != "," && k != j)
+                        parameterValue += (tokens[k] + (tokens[k + 1] == ")" || tokens[k + 1] == "," ? "" : " "));
                     else {
                         methodCall.parameterValues.push_back(parameterValue);
                         parameterValue = "";
@@ -311,9 +311,9 @@ vector<MethodCall> CppCode::GetMethodCalls(CppMethod cppMethod) {
 }
 
 void CppCode::UpdateMethodCalls(CppMethod cppMethod) {
-    vector<string> lexemes = this->lexemes,
-        newLexemes = {};
-    int lexemesSize = lexemes.size(),
+    vector<string> tokens = this->tokens,
+        newTokens = {};
+    int tokensSize = tokens.size(),
         parametersSize = cppMethod.parameters.size(),
         oldParametersSize = cppMethod.oldParameters.size(),
         j = 0,
@@ -321,99 +321,99 @@ void CppCode::UpdateMethodCalls(CppMethod cppMethod) {
         depth = 0;
     string cppMethodName = cppMethod.name,
         parameterValue = "";
-    for (int i = 0; i < lexemes.size(); i++)
-        if (lexemes[i] != cppMethodName) {
-            if (i < lexemes.size() - 1 && lexemes[i + 1] == cppMethodName)
-                newLexemes.push_back(lexemes[i] + " " + lexemes[i + 1]);
+    for (int i = 0; i < tokens.size(); i++)
+        if (tokens[i] != cppMethodName) {
+            if (i < tokens.size() - 1 && tokens[i + 1] == cppMethodName)
+                newTokens.push_back(tokens[i] + " " + tokens[i + 1]);
             else
-                newLexemes.push_back(lexemes[i]);
+                newTokens.push_back(tokens[i]);
         }
         else {
             MethodCall methodCall = {};
             methodCall.methodName = cppMethodName;
             methodCall.parameterValues = {};
             depth = 0;
-            lexemesSize = lexemes.size();
-            for (j = i + 1; j < lexemesSize; j++) {
-                if (lexemes[j] == "(")
+            tokensSize = tokens.size();
+            for (j = i + 1; j < tokensSize; j++) {
+                if (tokens[j] == "(")
                     depth++;
-                if (lexemes[j] == ")") {
+                if (tokens[j] == ")") {
                     if (depth > 1)
                         depth--;
                     else
                         break;
                 }
             }
-            if (lexemes[j + 1] != "{") {
+            if (tokens[j + 1] != "{") {
                 parameterValue = "";
                 for (k = i + 2; k < j + 1; k++)
-                    if (lexemes[k] != "," && k != j)
-                        parameterValue += (lexemes[k] + (lexemes[k + 1] == ")" || lexemes[k + 1] == "," ? "" : " "));
+                    if (tokens[k] != "," && k != j)
+                        parameterValue += (tokens[k] + (tokens[k + 1] == ")" || tokens[k + 1] == "," ? "" : " "));
                     else {
                         methodCall.parameterValues.push_back(parameterValue);
                         parameterValue = "";
                     }
-                newLexemes.push_back("(");
+                newTokens.push_back("(");
                 if (parametersSize == methodCall.parameterValues.size())
                     for (int l = 0; l < parametersSize; l++) {
-                        newLexemes.push_back(methodCall.parameterValues[l]);
+                        newTokens.push_back(methodCall.parameterValues[l]);
                         if (l < parametersSize - 1)
-                            newLexemes.push_back(",");
+                            newTokens.push_back(",");
                     }
                 else {
                     int newParametersSize = methodCall.parameterValues.size(),
                         m = 0;
                     for (int l = 0; l < parametersSize; l++)
                         if (cppMethod.parameters[l].name == cppMethod.oldParameters[m].name && m < oldParametersSize && l < parametersSize) {
-                            newLexemes.push_back(methodCall.parameterValues[l]);
+                            newTokens.push_back(methodCall.parameterValues[l]);
                             if (l < parametersSize - 1)
-                                newLexemes.push_back(",");
+                                newTokens.push_back(",");
                         }
                         else {
                             l--;
                             m++;
                         }
                 }
-                newLexemes.push_back(")");
+                newTokens.push_back(")");
                 i = j;
             }
         }
-    this->lexemes = newLexemes;
+    this->tokens = newTokens;
 }
 
 void CppCode::UpdateMethodCalls(CppMethod cppMethod, MethodCall methodCall, MethodCall newMethodCall) {
     if (methodCall.methodName == cppMethod.name) {
-        vector<string> lexemes = this->lexemes,
-            newLexemes = {};
-        int lexemesSize = lexemes.size();
-        for (int i = 0; i < lexemesSize; i++)
-            if ((i < lexemesSize - 2) &&
-                lexemes[i] != methodCall.methodName &&
-                lexemes[i + 1] != "(" &&
-                lexemes[i + 2] != methodCall.parameterValues[0])
-                newLexemes.push_back(lexemes[i]);
+        vector<string> tokens = this->tokens,
+            newTokens = {};
+        int tokensSize = tokens.size();
+        for (int i = 0; i < tokensSize; i++)
+            if ((i < tokensSize - 2) &&
+                tokens[i] != methodCall.methodName &&
+                tokens[i + 1] != "(" &&
+                tokens[i + 2] != methodCall.parameterValues[0])
+                newTokens.push_back(tokens[i]);
             else {
-                if (i < lexemesSize + 2 && 
-                    lexemes[i] == methodCall.methodName &&
-                    lexemes[i + 2] == methodCall.parameterValues[0]) {
-                    newLexemes.push_back(newMethodCall.methodName);
-                    newLexemes.push_back("(");
+                if (i < tokensSize + 2 && 
+                    tokens[i] == methodCall.methodName &&
+                    tokens[i + 2] == methodCall.parameterValues[0]) {
+                    newTokens.push_back(newMethodCall.methodName);
+                    newTokens.push_back("(");
                     int parametersSize = methodCall.parameterValues.size(),
                         newParametersSize = newMethodCall.parameterValues.size();
                     for (int j = 0; j < newParametersSize; j++) {
-                        newLexemes.push_back(newMethodCall.parameterValues[j]);
+                        newTokens.push_back(newMethodCall.parameterValues[j]);
                         if (j < newParametersSize - 1)
-                            newLexemes.push_back(",");
+                            newTokens.push_back(",");
                     }
-                    newLexemes.push_back(")");
+                    newTokens.push_back(")");
                     i += 3;
                     for (int j = 0; j < parametersSize; j++)
                         i += (j < parametersSize - 1) ? 2 : 1;
                 }
                 else
-                    newLexemes.push_back(lexemes[i]);
+                    newTokens.push_back(tokens[i]);
             }
-        this->lexemes = newLexemes;
+        this->tokens = newTokens;
     }
 }
 
@@ -422,22 +422,22 @@ void CppCode::UpdateMethodCallsV2(CppMethod cppMethod, MethodCall methodCall, Me
         vector<CppMethod> methods = this->methods;
         int methodsSize = methods.size();
         for (int i = 0; i < methodsSize; i++) {
-            vector<string> lexemes = methods[i].GetLexemes(),
+            vector<string> tokens = methods[i].GetTokens(),
                 newLexemes = {};
-            if (lexemes.size() == 0) {
-                lexemes = methods[i].ToLexemes();
+            if (tokens.size() == 0) {
+                tokens = methods[i].ToTokens();
             }
-            int lexemesSize = lexemes.size();
+            int lexemesSize = tokens.size();
             for (int i = 0; i < lexemesSize; i++)
                 if ((i < lexemesSize - 2) &&
-                    lexemes[i] != methodCall.methodName &&
-                    lexemes[i + 1] != "(" &&
-                    lexemes[i + 2] != methodCall.parameterValues[0])
-                    newLexemes.push_back(lexemes[i]);
+                    tokens[i] != methodCall.methodName &&
+                    tokens[i + 1] != "(" &&
+                    tokens[i + 2] != methodCall.parameterValues[0])
+                    newLexemes.push_back(tokens[i]);
                 else {
                     if (i < lexemesSize + 2 &&
-                        lexemes[i] == methodCall.methodName &&
-                        lexemes[i + 2] == methodCall.parameterValues[0]) {
+                        tokens[i] == methodCall.methodName &&
+                        tokens[i + 2] == methodCall.parameterValues[0]) {
                         newLexemes.push_back(newMethodCall.methodName);
                         newLexemes.push_back("(");
                         int parametersSize = methodCall.parameterValues.size(),
@@ -451,22 +451,22 @@ void CppCode::UpdateMethodCallsV2(CppMethod cppMethod, MethodCall methodCall, Me
                         int k = 0,
                             depth = 0;
                         for (k = i; k < lexemesSize; k++) {
-                            if (lexemes[k] == "(" || lexemes[k] == "{")
+                            if (tokens[k] == "(" || tokens[k] == "{")
                                 depth++;
-                            if (lexemes[k] == ")" || lexemes[k] == "}") {
+                            if (tokens[k] == ")" || tokens[k] == "}") {
                                 if (depth > 1)
                                     depth--;
                                 else
                                     break;
                             }
                         }
-                        newLexemes.push_back(lexemes[k + 1]);
+                        newLexemes.push_back(tokens[k + 1]);
                         i += 3;
                         for (int j = 0; j < parametersSize; j++)
                             i += (j < parametersSize - 1) ? 2 : 1;
                     }
                     else
-                        newLexemes.push_back(lexemes[i]);
+                        newLexemes.push_back(tokens[i]);
                 }
             methods[i] = CppMethod(newLexemes);
         }
@@ -495,22 +495,22 @@ void CppCode::UpdateMethods(vector<CppMethod> methods) {
     this->methods = methods;
 }
 
-void CppCode::UpdateLexemes() {
-    vector<string> newLexemes = {},
-        curLexemes = this->lexemes;
+void CppCode::UpdateTokens() {
+    vector<string> newTokens = {},
+        curTokens = this->tokens;
     vector<CppMethod> methods = this->methods;
     int methodsSize = methods.size(),
-        curLexemesSize = curLexemes.size();
+        curTokensSize = curTokens.size();
     for (int i = 0; i < methodsSize; i++) {
-        for (int j = 0; j < curLexemes.size(); j++) {
-            if ((curLexemes[j] == methods[i].type) && 
-                (curLexemes[j + 1] == methods[i].name)) {
+        for (int j = 0; j < curTokens.size(); j++) {
+            if ((curTokens[j] == methods[i].type) && 
+                (curTokens[j + 1] == methods[i].name)) {
                 int k = 0,
                     depth = 0;
-                for (k = j + 1; k < curLexemes.size(); k++) {
-                    if (curLexemes[k] == "{")
+                for (k = j + 1; k < curTokens.size(); k++) {
+                    if (curTokens[k] == "{")
                         depth++;
-                    if ((curLexemes[k] == "}") && (depth > 0)) {
+                    if ((curTokens[k] == "}") && (depth > 0)) {
                         if (depth > 1)
                             depth--;
                         else
@@ -518,45 +518,45 @@ void CppCode::UpdateLexemes() {
                     }
                 }
                 j = k;
-                vector<string> newMethodLexemes = methods[i].ToLexemes();
-                int newMethodLexemesSize = newMethodLexemes.size();
-                for (int l = 0; l < newMethodLexemesSize; l++)
-                    newLexemes.push_back(newMethodLexemes[l]);
+                vector<string> newMethodTokens = methods[i].ToTokens();
+                int newMethodTokensSize = newMethodTokens.size();
+                for (int l = 0; l < newMethodTokensSize; l++)
+                    newTokens.push_back(newMethodTokens[l]);
             }
             else
-                newLexemes.push_back(curLexemes[j]);
+                newTokens.push_back(curTokens[j]);
         }
-        curLexemes = newLexemes;
-        newLexemes = {};
+        curTokens = newTokens;
+        newTokens = {};
     }
-    this->lexemes = curLexemes;
+    this->tokens = curTokens;
 }
 
-void CppCode::UpdateLexemesV2() {
-    vector<string> newLexemes = {},
-        curLexemes = this->lexemes;
+void CppCode::UpdateTokensV2() {
+    vector<string> newTokens = {},
+        curTokens = this->tokens;
     vector<CppMethod> methods = this->methods;
     int methodsSize = methods.size(),
-        curLexemesSize = curLexemes.size();
+        curTokensSize = curTokens.size();
     for (int i = 0; i < methodsSize; i++) {
         bool isNotNewMethod = false,
             isMethod = false;
-        for (int j = 0; j < curLexemes.size(); j++)
-            if ((curLexemes[j] == methods[i].type) &&
-                (curLexemes[j + 1] == methods[i].name)) {
+        for (int j = 0; j < curTokens.size(); j++)
+            if ((curTokens[j] == methods[i].type) &&
+                (curTokens[j + 1] == methods[i].name)) {
                 isNotNewMethod = true;
                 break;
             }
         if (isNotNewMethod)
-            for (int j = 0; j < curLexemes.size(); j++) {
-                if ((curLexemes[j] == methods[i].type) &&
-                    (curLexemes[j + 1] == methods[i].name)) {
+            for (int j = 0; j < curTokens.size(); j++) {
+                if ((curTokens[j] == methods[i].type) &&
+                    (curTokens[j + 1] == methods[i].name)) {
                     int k = 0,
                         depth = 0;
-                    for (k = j + 1; k < curLexemes.size(); k++) {
-                        if (curLexemes[k] == "{")
+                    for (k = j + 1; k < curTokens.size(); k++) {
+                        if (curTokens[k] == "{")
                             depth++;
-                        if ((curLexemes[k] == "}") && (depth > 0)) {
+                        if ((curTokens[k] == "}") && (depth > 0)) {
                             if (depth > 1)
                                 depth--;
                             else
@@ -564,52 +564,188 @@ void CppCode::UpdateLexemesV2() {
                         }
                     }
                     j = k;
-                    vector<string> newMethodLexemes = methods[i].ToLexemes();
-                    int newMethodLexemesSize = newMethodLexemes.size();
-                    for (int l = 0; l < newMethodLexemesSize; l++)
-                        newLexemes.push_back(newMethodLexemes[l]);
+                    vector<string> newMethodTokens = methods[i].ToTokens();
+                    int newMethodTokensSize = newMethodTokens.size();
+                    for (int l = 0; l < newMethodTokensSize; l++)
+                        newTokens.push_back(newMethodTokens[l]);
                 }
                 else
-                    newLexemes.push_back(curLexemes[j]);
+                    newTokens.push_back(curTokens[j]);
             }
         else {
             bool nextMethodIsNew = false;
-            for (int j = 0; j < curLexemes.size(); j++) {
-                if (i > 0 && (curLexemes[j] == methods[i - 1].type) &&
-                    (curLexemes[j + 1] == methods[i - 1].name)) {
+            for (int j = 0; j < curTokens.size(); j++) {
+                if (i > 0 && (curTokens[j] == methods[i - 1].type) &&
+                    (curTokens[j + 1] == methods[i - 1].name)) {
                     nextMethodIsNew = true;
                 }
                 if (nextMethodIsNew && 
-                    (curLexemes[j] == methods[i + 1].type) &&
-                    (curLexemes[j + 1] == methods[i + 1].name)) {
+                    (curTokens[j] == methods[i + 1].type) &&
+                    (curTokens[j + 1] == methods[i + 1].name)) {
                     nextMethodIsNew = true;
-                    vector<string> newMethodLexemes = methods[i].ToLexemes();
-                    int newMethodLexemesSize = newMethodLexemes.size();
-                    for (int l = 0; l < newMethodLexemesSize; l++)
-                        newLexemes.push_back(newMethodLexemes[l]);
+                    vector<string> newMethodTokens = methods[i].ToTokens();
+                    int newMethodTokensSize = newMethodTokens.size();
+                    for (int l = 0; l < newMethodTokensSize; l++)
+                        newTokens.push_back(newMethodTokens[l]);
                 }
-                newLexemes.push_back(curLexemes[j]); 
+                newTokens.push_back(curTokens[j]); 
             }
         }
-        curLexemes = newLexemes;
-        newLexemes = {};
+        curTokens = newTokens;
+        newTokens = {};
     }
-    this->lexemes = curLexemes;
+    this->tokens = curTokens;
+}
+
+void CppCode::UpdateTokensV3() {
+    vector<string> newTokens = {},
+        curTokens = this->tokens;
+    vector<CppMethod> methods = this->methods;
+    vector<CppClass> classes = this->classes;
+    int methodsSize = methods.size(),
+        classesSize = classes.size(),
+        curTokensSize = curTokens.size();
+    for (int i = 0; i < classesSize; i++) {
+        bool isNotNewClass = false;
+        for (int j = 0; j < curTokensSize; j++) {
+            if (j < curTokens.size() - 1 &&
+                curTokens[j] == "class" &&
+                curTokens[j + 1] == classes[i].name) {
+                isNotNewClass = true;
+                break;
+            }
+        }
+        if (isNotNewClass) {
+            for (int j = 0; j < curTokens.size(); j++) {
+                if (curTokens[j] == "class" &&
+                    curTokens[j + 1] == classes[i].name) {
+                    int k = 0,
+                        depth = 0;
+                    for (k = j + 1; k < curTokens.size(); k++) {
+                        if (curTokens[k] == "{")
+                            depth++;
+                        if ((curTokens[k] == "}") && (depth > 0)) {
+                            if (depth > 1)
+                                depth--;
+                            else
+                                break;
+                        }
+                    }
+                    j = k;
+                    vector<string> newClassTokens = classes[i].ToTokens();
+                    int newClassTokensSize = newClassTokens.size() - 1;
+                    for (int l = 0; l < newClassTokensSize; l++)
+                        newTokens.push_back(newClassTokens[l]);
+                }
+                else
+                    newTokens.push_back(curTokens[j]);
+            }
+        }
+        else {
+            bool nextClassIsNew = false;
+            for (int j = 0; j < curTokens.size(); j++) {
+                if (i > 0 && (curTokens[j] == "class") &&
+                    (curTokens[j + 1] == classes[i - 1].name)) {
+                    nextClassIsNew = true;
+                }
+                if (j > 0 &&
+                    i > 0 &&
+                    (nextClassIsNew &&
+                    (curTokens[j - 1] == "}") &&
+                    (curTokens[j] == ";"))) {
+                    nextClassIsNew = true;
+                    vector<string> newClassTokens = classes[i].ToTokens();
+                    int newClassTokensSize = newClassTokens.size() - 1;
+                    newTokens.push_back(";");
+                    newTokens.push_back("\n");
+                    newTokens.push_back("\n");
+                    for (int l = 0; l < newClassTokensSize; l++)
+                        newTokens.push_back(newClassTokens[l]);
+                    /*if (nextClassIsNew) {
+                        newTokens.push_back(";");
+                        newTokens.push_back("\n");
+                        newTokens.push_back("\n");
+                        newTokens.push_back("class");
+                    }*/
+                }
+                newTokens.push_back(curTokens[j]);
+            }
+        }
+        curTokens = newTokens;
+        newTokens = {};
+    }
+    for (int i = 0; i < methodsSize; i++) {
+        bool isNotNewMethod = false,
+            isMethod = false;
+        for (int j = 0; j < curTokens.size(); j++)
+            if ((curTokens[j] == methods[i].type) &&
+                (curTokens[j + 1] == methods[i].name)) {
+                isNotNewMethod = true;
+                break;
+            }
+        if (isNotNewMethod)
+            for (int j = 0; j < curTokens.size(); j++) {
+                if ((curTokens[j] == methods[i].type) &&
+                    (curTokens[j + 1] == methods[i].name)) {
+                    int k = 0,
+                        depth = 0;
+                    for (k = j + 1; k < curTokens.size(); k++) {
+                        if (curTokens[k] == "{")
+                            depth++;
+                        if ((curTokens[k] == "}") && (depth > 0)) {
+                            if (depth > 1)
+                                depth--;
+                            else
+                                break;
+                        }
+                    }
+                    j = k;
+                    vector<string> newMethodTokens = methods[i].ToTokens();
+                    int newMethodTokensSize = newMethodTokens.size();
+                    for (int l = 0; l < newMethodTokensSize; l++)
+                        newTokens.push_back(newMethodTokens[l]);
+                }
+                else
+                    newTokens.push_back(curTokens[j]);
+            }
+        else {
+            bool nextMethodIsNew = false;
+            for (int j = 0; j < curTokens.size(); j++) {
+                if (i > 0 && (curTokens[j] == methods[i - 1].type) &&
+                    (curTokens[j + 1] == methods[i - 1].name)) {
+                    nextMethodIsNew = true;
+                }
+                if (nextMethodIsNew &&
+                    i < methods.size() - 1 &&
+                    (curTokens[j] == methods[i + 1].type) &&
+                    (curTokens[j + 1] == methods[i + 1].name)) {
+                    nextMethodIsNew = true;
+                    vector<string> newMethodTokens = methods[i].ToTokens();
+                    int newMethodTokensSize = newMethodTokens.size();
+                    for (int l = 0; l < newMethodTokensSize; l++)
+                        newTokens.push_back(newMethodTokens[l]);
+                }
+                newTokens.push_back(curTokens[j]);
+            }
+        }
+        curTokens = newTokens;
+        newTokens = {};
+    }
+    this->tokens = curTokens;
 }
 
 string CppCode::ToString() {
     stringstream cppCodeStream;
-    vector<string> lexemes = this->lexemes;
-    int lexemesSize = lexemes.size();
-    for (int i = 0; i < lexemesSize; i++) {
-        string sep = (i < lexemesSize - 1 ? this->GetSep(lexemes[i], lexemes[i + 1]) : " ");
-        cppCodeStream << lexemes[i] << sep;
+    vector<string> tokens = this->tokens;
+    int tokensSize = tokens.size();
+    for (int i = 0; i < tokensSize; i++) {
+        string sep = (i < tokensSize - 1 ? this->GetSep(tokens[i], tokens[i + 1]) : " ");
+        cppCodeStream << tokens[i] << sep;
     }
     return cppCodeStream.str();
 }
 
-string CppCode::GetCode()
-{
+string CppCode::GetCode() {
     return this->cppCode;
 }
 
@@ -626,6 +762,10 @@ string CppCode::GetSep(string curLexeme, string nxtLexeme) {
         (curLexeme == "." || nxtLexeme == "."))
         return "";
     else if (curLexeme == "this" && nxtLexeme == "-")
+        return "";
+    else if (curLexeme == "this->")
+        return "";
+    else if (curLexeme == "std:" || curLexeme == ":")
         return "";
     else if ((curLexeme == "+" || curLexeme == "-") && nxtLexeme == "=")
         return "";

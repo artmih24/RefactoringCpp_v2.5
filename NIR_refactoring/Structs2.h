@@ -3,11 +3,16 @@
 
 /// <summary>Параметр метода</summary>
 struct Parameter {
-    std::string type,   // тип значения
-        name,           // название переменной
-        defaultValue;   // значение по умолчанию
+    std::string type,           // тип значения
+                name,           // название переменной
+                defaultValue;   // значение по умолчанию
     bool pointer,       // передается ли указатель
-        reference;      // передается ли переменая по ссылке
+         reference;     // передается ли переменая по ссылке
+
+    Parameter(std::string type, std::string name) {
+        this->type = type;
+        this->name = name;
+    }
 };
 
 /// <summary>Модификатор доступа</summary>

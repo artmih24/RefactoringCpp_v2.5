@@ -6,7 +6,6 @@
 #include <clocale>
 #include <sstream>
 #include <regex>
-using namespace std;
 
 #include "CppMethod.h"
 #include "CppClass.h"
@@ -16,57 +15,54 @@ using namespace std;
 /// <summary>Класс кода</summary>
 class CppCode {
 private:
-    string cppCode;                 // строка, содержащая код
+    std::string cppCode;                        // строка, содержащая код
 
 public:
-    vector<string> tokens;          // список лексем кода
+    std::vector<std::string> tokens,            // список токенов кода
+                             types,             // список типов переменных в коде
+                             keyWordsSet,       // список ключевых слов
+                             specSymbolsSet;    // список спецсимволов
 
-    vector<CppMethod> methods;      // список методов кода
+    std::vector<CppMethod> methods;             // список методов кода
 
-    vector<CppClass> classes;       // список классов в коде
-
-    vector<string> types;           // список типов переменных в коде
-
-    vector<string> keyWordsSet;     // список ключевых слов
-
-    vector<string> specSymbolsSet;  // список спецсимволов
+    std::vector<CppClass> classes;              // список классов в коде
 
     /// <summary>Конструктор по умолчанию</summary>
     CppCode();
 
     /// <summary>Конструктор класса</summary>
-    CppCode(string cppCode);
+    CppCode(std::string cppCode);
 
     /// <summary>Дополнительные действия для разбиения кода на лексемы</summary>
-    string Modify();
+    std::string Modify();
 
     /// <summary>Токенизация кода</summary>
-    vector<string> GetTokens();
+    std::vector<std::string> GetTokens();
 
     /// <summary>Токенизация кода</summary>
-    vector<string> GetTokensV2();
+    std::vector<std::string> GetTokensV2();
 
     /// <summary>Получение типов данных, описанных в коде</summary>
     /// <param name="type">- способ объявления пользовательского типа</param>
     /// <returns>вектор пользовательских типов данных</returns>
-    vector<string> GetTypes(string type);
+    std::vector<std::string> GetTypes(std::string type);
 
     /// <summary>Получение типов данных, описанных в коде</summary>
     /// <returns>вектор пользовательских типов данных</returns>
-    vector<string> GetStdTypes();
+    std::vector<std::string> GetStdTypes();
 
     /// <summary>Получение вектора методов</summary>
     /// <returns>вектор методов в коде</returns>
-    vector<CppMethod> GetMethods();
+    std::vector<CppMethod> GetMethods();
 
     /// <summary>Полечение списка вызовов метода</summary>
     /// <param name="cppMethod">- метод, вызовы которого требуется получить</param>
     /// <returns>список вызовов методов</returns>
-    vector<MethodCall> GetMethodCalls(CppMethod cppMethod);
+    std::vector<MethodCall> GetMethodCalls(CppMethod cppMethod);
 
     /// <summary>Получение списка классов в коде</summary>
     /// <returns>список классов в коде</returns>
-    vector<CppClass> GetClasses();
+    std::vector<CppClass> GetClasses();
 
     /// <summary>Обновление частей списка токенов, содержащих вызовы методов</summary>
     /// <param name="cppMethod">- метод, вызовы которого нужно обновить</param>
@@ -86,7 +82,7 @@ public:
 
     /// <summary>Обновление методов</summary>
     /// <param name="methods">- список методов</param>
-    void UpdateMethods(vector<CppMethod> methods);
+    void UpdateMethods(std::vector<CppMethod> methods);
 
     /// <summary>Обновление списка токенов</summary>
     void UpdateTokens();
@@ -98,19 +94,19 @@ public:
 
     /// <summary>Обновление строки, содержащей код</summary>
     /// <param name="code">- строка, содержащая код</param>
-    void UpdateCode(string code);
+    void UpdateCode(std::string code);
 
     /// <summary>Получение строки, содержащей код</summary>
     /// <returns>Строка, содержащая код</returns>
-    string ToString();
+    std::string ToString();
 
     /// <summary>Получение строки, содержащей код</summary>
     /// <returns>Строка, содержащая код</returns>
-    string GetCode();
+    std::string GetCode();
 
     /// <summary>Получение разделителя в коде</summary>
     /// <param name="curLexeme">- текущая лексема кода</param>
     /// <param name="nxtLexeme">- следующая лексема кода</param>
     /// <returns>Разделитель в коде</returns>
-    string GetSep(string curLexeme, string nxtLexeme);
+    std::string GetSep(std::string curLexeme, std::string nxtLexeme);
 };

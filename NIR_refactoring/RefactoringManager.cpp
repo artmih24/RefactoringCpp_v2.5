@@ -4,11 +4,11 @@
 
 /// <summary>Конструктор объекта класса RefactoringManager</summary>
 /// <param name="filePath">- путь к файлу с исходным кодом</param>
-RefactoringManager::RefactoringManager(string filePath) {
+RefactoringManager::RefactoringManager(std::string filePath) {
     this->filePath = filePath;
     this->outFilePath = this->GetOutputFileName(this->filePath);
-    this->fileStream = ifstream(this->filePath);
-    cout << this->outFilePath << endl;
+    this->fileStream = std::ifstream(this->filePath);
+    std::cout << this->outFilePath << std::endl;
 }
 
 /// <summary>Проведение рефакторинга</summary>
@@ -26,7 +26,7 @@ void RefactoringManager::Refactoring() {
 /// <summary>Проведение рефакторинга методом удаления присваиваний параметрам</summary>
 /// <param name="code">- исходный код программы</param>
 void RefactoringManager::RemoveAssignmentsToParametersProc(CppCode code) {
-    vector<CppMethod> methods = code.methods;   // список методов кода
+    std::vector<CppMethod> methods = code.methods;   // список методов кода
     for (int i = 0; i < methods.size(); i++)
         methods[i] = this->RemoveAssignmentsToParameters(methods[i]);
     code.UpdateMethods(methods);
@@ -92,7 +92,7 @@ CppMethod RefactoringManager::RemoveAssignmentsToParameters(CppMethod method) {
 /// <summary>Проведение рефакторинга методом удаления параметров</summary>
 /// <param name="code">- исходный код программы</param>
 void RefactoringManager::RemoveParametersProc(CppCode code) {
-    vector<CppMethod> methods = code.GetMethods();  // список методов кода
+    std::vector<CppMethod> methods = code.GetMethods();  // список методов кода
     for (int j = 0; j < methods.size(); j++) {
         // рефакторинг реализаций методов - удаление лишних параметров
         for (int i = 0; i < methods.size(); i++)
@@ -107,7 +107,7 @@ void RefactoringManager::RemoveParametersProc(CppCode code) {
         code.UpdateMethods(methods);
         code.UpdateTokens();
         this->code = code;
-        string codeString = code.ToString();
+        std::string codeString = code.ToString();
         code.UpdateCode(codeString);
         code.tokens = code.GetTokens();
         methods = code.GetMethods();
@@ -121,14 +121,14 @@ void RefactoringManager::RemoveParametersProc(CppCode code) {
 CppMethod RefactoringManager::RemoveParameters(CppMethod method) {
     CppMethod newCppMethod,     // новый метод
         curCppMethod = method;  // текущий метод
-    vector<Parameter> parameters = curCppMethod.parameters; // список параметров метода
-    vector<string> body = curCppMethod.body;    // лексемы тела метода
+    std::vector<Parameter> parameters = curCppMethod.parameters; // список параметров метода
+    std::vector<std::string> body = curCppMethod.body;    // токены тела метода
     int parametersSize = parameters.size(), // кол-во параметров
-        bodySize = body.size(), // кол-во лексем тела метода
+        bodySize = body.size(), // кол-во токенов тела метода
         depth = 0,  // уровень вложенности скобок
         k = 0,
         l = 0;
-    string parameterValue;
+    std::string parameterValue;
     newCppMethod.parameters = {};
     newCppMethod.oldParameters = parameters;
     newCppMethod.body = body;
@@ -177,15 +177,15 @@ CppMethod RefactoringManager::RemoveParameters(CppMethod method) {
 }
 
 void RefactoringManager::SendFullObjectProc(CppCode code) {
-    vector<CppMethod> methods = code.methods;   // список методов кода
+    std::vector<CppMethod> methods = code.methods;   // список методов кода
     int j = 0;
     // цикл по всем методам
     for (int i = 0; i < methods.size(); i++) {
-        vector<MethodCall> methodCalls = code.GetMethodCalls(methods[i]);
+        std::vector<MethodCall> methodCalls = code.GetMethodCalls(methods[i]);
         // цикл по всем вызовам метода
         for (MethodCall methodCall : methodCalls) {
-            vector<string> values = methodCall.parameterValues;
-            vector<Object> objects = {},
+            std::vector<std::string> values = methodCall.parameterValues;
+            std::vector<Object> objects = {},
                 objectsFin = {};
             // цикл по всем значениям параметров
             for (int k = 0; k < values.size(); k++) {
@@ -199,7 +199,7 @@ void RefactoringManager::SendFullObjectProc(CppCode code) {
                     Object object = {};
                     object.name = values[k].substr(0, values[k].find('.'));
                     // находим, к какому типу объект относится
-                    vector<string> tokens = code.tokens,
+                    std::vector<std::string> tokens = code.tokens,
                         types = code.GetTypes("class"),
                         types2 = code.GetTypes("struct"),
                         types3 = code.GetTypes("union");
@@ -207,7 +207,7 @@ void RefactoringManager::SendFullObjectProc(CppCode code) {
                     types.insert(types.end(), types3.begin(), types3.end());
                     int lexemesSize = tokens.size();
                     for (int l = 0; l < lexemesSize; l++) {
-                        for (string type : types)
+                        for (std::string type : types)
                             if (tokens[l] == type && tokens[l + 1] == object.name) {
                                 // если смогли найти тип
                                 object.className = tokens[l];
@@ -250,7 +250,7 @@ void RefactoringManager::SendFullObjectProc(CppCode code) {
                 methods.push_back(result.cppMethod);
                 //methods = code.GetMethods();
                 code.UpdateMethods(methods);
-                code.UpdateTokens();
+                code.UpdateTokensV2();
             }
         }
     }
@@ -264,9 +264,9 @@ MethodSendFullObject RefactoringManager::SendFullObject(CppMethod method, Object
         curCppMethod = method;  // текущий метод
     MethodSendFullObject newCppMethodStruct;
     MethodCall newMethodCall = {};
-    vector<string> values = methodCall.parameterValues;
+    std::vector<std::string> values = methodCall.parameterValues;
     int cnt = 0;
-    for (string value : values)
+    for (std::string value : values)
         if (value.substr(0, object.name.length()) == object.name && 
             value.length() > object.name.length())
             cnt++;
@@ -278,9 +278,7 @@ MethodSendFullObject RefactoringManager::SendFullObject(CppMethod method, Object
             if (values[i].substr(0, object.name.length()) == object.name)
                 newCppMethod.name += "_" + values[i].substr(object.name.length() + 1, values[i].length());
         newCppMethod.parameters = {};
-        Parameter newParameter = {};
-        newParameter.name = object.name;
-        newParameter.type = object.className;
+        Parameter newParameter = Parameter(object.className, object.name);
         newCppMethod.parameters.push_back(newParameter);
         newMethodCall.methodName = newCppMethod.name;
         newMethodCall.parameterValues.push_back(object.name);
@@ -312,9 +310,9 @@ MethodSendFullObject RefactoringManager::SendFullObject(CppMethod method, Object
         }
         newCppMethod.body.pop_back();
         bool isNotFirst = false;
-        for (string lexeme : method.body) {
+        for (std::string token : method.body) {
             if (isNotFirst)
-                newCppMethod.body.push_back(lexeme);
+                newCppMethod.body.push_back(token);
             else {
                 isNotFirst = true;
                 continue;
@@ -339,38 +337,37 @@ void RefactoringManager::ExtractClassProc(CppCode code) {
         prevNum = 0;
     std::string selectedMethodsNumsStr = "";
     std::set<int> selectedMethodsNums = {};
-    CppClasses result = {};
     std::vector<std::string> newTokens = {};
     for (int i = 0; i < classesSize; i++) {
         if (classes[i].methods.size() > 1) {
             selectedMethodsNums = {};
             curClassMethods = classes[i].methods;
             methodsSize = curClassMethods.size();
-            numWidth = to_string(methodsSize).size();
-            cout << "Select methods to move in new class" << endl;
-            cout << "or enter '0' to skip class " << classes[i].name << endl;
+            numWidth = std::to_string(methodsSize).size();
+            std::cout << "Выберите методы для перемещения в новый класс," << std::endl;
+            std::cout << "или введите '0', чтобы пропустить рефакторинг класса " << classes[i].name << std::endl;
             for (int j = 0; j < methodsSize; j++)
-                cout << setw(numWidth) << (j + 1) << " " << curClassMethods[j].name << endl;
-            cin >> selectedMethodsNumsStr;
+                std::cout << std::setw(numWidth) << (j + 1) << " " << curClassMethods[j].name << std::endl;
+            std::cin >> selectedMethodsNumsStr;
             /*string::iterator iteratorRemoveSpaces = remove_if(selectedMethodsNumsStr.begin(), selectedMethodsNumsStr.end(), ' ');
             selectedMethodsNumsStr.erase(iteratorRemoveSpaces, selectedMethodsNumsStr.end());*/
-            regex extraSpaces("[ ]+"),
+            std::regex extraSpaces("[ ]+"),
                 extraCommas("[,]+"),
                 extraDashes("[-]+"),
                 extraIntervals("[-]{1}[0-9]+[-]{1}"),
                 letters("[A-Za-zА-ЯЁа-яё]+"),
                 specSymbols("[._\\/\?+=<>\"\'`~#@$%^&*()]");
-            regex_replace(selectedMethodsNumsStr, extraSpaces, " ");
-            regex_replace(selectedMethodsNumsStr, extraCommas, ",");
-            regex_replace(selectedMethodsNumsStr, extraDashes, "-");
-            regex_replace(selectedMethodsNumsStr, extraIntervals, "-");
-            regex_replace(selectedMethodsNumsStr, letters, "");
-            regex_replace(selectedMethodsNumsStr, specSymbols, "");
+            std::regex_replace(selectedMethodsNumsStr, extraSpaces, " ");
+            std::regex_replace(selectedMethodsNumsStr, extraCommas, ",");
+            std::regex_replace(selectedMethodsNumsStr, extraDashes, "-");
+            std::regex_replace(selectedMethodsNumsStr, extraIntervals, "-");
+            std::regex_replace(selectedMethodsNumsStr, letters, "");
+            std::regex_replace(selectedMethodsNumsStr, specSymbols, "");
             selectedMethodsNums = GetMethodNumbers(selectedMethodsNumsStr);
             if (*selectedMethodsNums.begin() == 0 && selectedMethodsNums.size() == 1)
                 continue;
             std::vector<int> vecSelectedMethodsNums(selectedMethodsNums.begin(), selectedMethodsNums.end());
-            result = ExtractClass(classes[i], vecSelectedMethodsNums);
+            CppClasses result = ExtractClass(classes[i], vecSelectedMethodsNums);
             //classes[i] = resultClasses.newClassWExtractedMethods;
             classes[i] = result.oldClassWOExtractedMethods;
             //classes[i].UpdateClass();
@@ -388,18 +385,18 @@ void RefactoringManager::ExtractClassProc(CppCode code) {
     this->code = code;
 }
 
-CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> methodsNums) {
-    vector<CppClassMethod> methods = cppClass.methods,
+CppClasses RefactoringManager::ExtractClass(CppClass cppClass, std::vector<int> methodsNums) {
+    std::vector<CppClassMethod> methods = cppClass.methods,
         oldClassMethodsFin = {},
         newClassMethodsFin = {},
         oldClassMethods = {},
         newClassMethods = {};
-    vector<CppClassField> fields = cppClass.fields,
+    std::vector<CppClassField> fields = cppClass.fields,
         oldClassFieldsFin = {},
         newClassFieldsFin = {},
         oldClassFields = {},
         newClassFields = {};
-    vector<CppClassConstructor> constructors = cppClass.constructors,
+    std::vector<CppClassConstructor> constructors = cppClass.constructors,
         oldClassConstructorsFin = {},
         newClassConstructorsFin = {},
         oldClassConstructors = {},
@@ -410,7 +407,6 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
     CppClassGraph classGraph = cppClass.classGraph;
     CppClass oldClass = {},
         newClass = {};
-    CppClasses result = {};
     int ind = 0;
     for (int i = fields.size(); i < methods.size() + fields.size(); i++) {
         int ii = i - fields.size();
@@ -478,7 +474,7 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
         newClass.CreateConstructor();
     newClass.destructor = newClassDestructor;
     newClass.tokens = newClass.ToTokens();
-    vector<string> tokens = code.tokens,
+    std::vector<std::string> tokens = code.tokens,
         newTokens = {};
     for (int i = 0; i < tokens.size(); i++) {
         //newTokens = {};
@@ -489,7 +485,7 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
             tokens[i + 4] == "(") {
             int depth = 0,
                 j = 0;
-            vector<int> commasInds = {};
+            std::vector<int> commasInds = {};
             for (j = i; j < tokens.size(); j++) {
                 if (tokens[j] == "," && depth == 1)
                     commasInds.push_back(j);
@@ -502,8 +498,8 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
                         break;
                 }
             }
-            vector<string> values = {};
-            string curValue = "";
+            std::vector<std::string> values = {};
+            std::string curValue = "";
             for (int k = i + 5; k < j + 1; k++) {
                 if (tokens[k] == "," || k == j) {
                     values.push_back(curValue);
@@ -520,7 +516,7 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
             //newTokens.push_back(tokens[i + 5]);
             int indOld = 0,
                 indNew = 0;
-            vector<string> newObjDecl = {};
+            std::vector<std::string> newObjDecl = {};
             newObjDecl.push_back(newClass.name);
             newObjDecl.push_back("New_" + tokens[i + 1]);
             newObjDecl.push_back("=");
@@ -557,7 +553,7 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
             newTokens.push_back(")");
             newTokens.push_back(";");
             newTokens.push_back("\n");
-            for (string token : newObjDecl)
+            for (std::string token : newObjDecl)
                 newTokens.push_back(token);
             //newTokens.push_back("\n");
             i = j;
@@ -616,7 +612,7 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
             }
         }
         if (!flag && !flag2 && className != "") {
-            string otherClass = "",
+            std::string otherClass = "",
                 otherObject = "";
             for (int m = 0; m < classes.size(); m++) {
                 if (classes[m] != className) {
@@ -630,23 +626,21 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, vector<int> metho
         else
             newTokens.push_back(tokens[i]);
     }
-    result.newTokens = newTokens;
-    result.oldClassWOExtractedMethods = oldClass;
-    result.newClassWExtractedMethods = newClass;
+    CppClasses result = CppClasses(oldClass, newClass, newTokens);
     return result;
 }
 
-set<int> RefactoringManager::GetMethodNumbers(string input) {
-    set<int> result = {};
-    stringstream str_strm;
-    string temp_str;
+std::set<int> RefactoringManager::GetMethodNumbers(std::string input) {
+    std::set<int> result = {};
+    std::stringstream str_strm;
+    std::string temp_str;
     int temp_int;
-    regex_replace(input, regex("[,]{1}"), " , ");
-    regex_replace(input, regex("[-]{1}"), " - ");
+    regex_replace(input, std::regex("[,]{1}"), " , ");
+    regex_replace(input, std::regex("[-]{1}"), " - ");
     str_strm << input; //convert the string s into stringstream
     while (!str_strm.eof()) {
         str_strm >> temp_str; //take words into temp_str one by one
-        if (stringstream(temp_str) >> temp_int) { //try to convert string to int
+        if (std::stringstream(temp_str) >> temp_int) { //try to convert string to int
             result.insert(temp_int);
             str_strm >> temp_str;
             if (temp_str == ",")
@@ -654,7 +648,7 @@ set<int> RefactoringManager::GetMethodNumbers(string input) {
             else if (temp_str == "-") {
                 int start = temp_int;
                 str_strm >> temp_str;
-                if (stringstream(temp_str) >> temp_int) {
+                if (std::stringstream(temp_str) >> temp_int) {
                     for (int num = start; num <= temp_int; num++)
                         result.insert(num);
                 }
@@ -668,8 +662,8 @@ set<int> RefactoringManager::GetMethodNumbers(string input) {
 /// <summary>Составление названия файла, в котором будет содержаться измененный код</summary>
 /// <param name="filePath">- полное название исходного файла</param>
 /// <returns>название файла, в котором будет содержаться измененный код</returns>
-string RefactoringManager::GetOutputFileName(string filePath) {
-    string newFilePath;
+std::string RefactoringManager::GetOutputFileName(std::string filePath) {
+    std::string newFilePath;
     if (filePath.substr(filePath.length() - 4, filePath.length()) == ".cpp")
         newFilePath = filePath.substr(0, filePath.length() - 4) + "_refactored.cpp";
     else if (filePath.substr(filePath.length() - 2, filePath.length()) == ".c")
@@ -679,16 +673,16 @@ string RefactoringManager::GetOutputFileName(string filePath) {
 
 /// <summary>Чтение файла</summary>
 /// <param name="filePath">- полное название файла</param>
-void RefactoringManager::GetFileContent(string filePath) {
-    string fileString = ""; // считываемая строка из файла
+void RefactoringManager::GetFileContent(std::string filePath) {
+    std::string fileString = ""; // считываемая строка из файла
     char buff[2000];    // буфер для вывода ошибки
-    ifstream fileStream(filePath);  // поток чтения из файла
+    std::ifstream fileStream(filePath);  // поток чтения из файла
     if (fileStream.is_open())
-        while (getline(fileStream, fileString))
-            this->stringStream << fileString << endl;
+        while (std::getline(fileStream, fileString))
+            this->stringStream << fileString << std::endl;
     else {
         strerror_s(buff, errno);
-        cerr << "Error: " << buff << endl;
+        std::cerr << "Error: " << buff << std::endl;
     }
     this->fileContent = this->stringStream.str();
     fileStream.close();
@@ -696,13 +690,13 @@ void RefactoringManager::GetFileContent(string filePath) {
 
 /// <summary>Запись в файл</summary>
 /// <param name="filePath">- полное название файла</param>
-void RefactoringManager::WriteFile(string filePath) {
-    string outString = "";  // строка, записываемая в файл
-    this->outFileStream.open(filePath, ios::out);
+void RefactoringManager::WriteFile(std::string filePath) {
+    std::string outString = "";  // строка, записываемая в файл
+    this->outFileStream.open(filePath, std::ios::out);
     this->outStringStream << this->fileContent;
     while (!outStringStream.eof()) {
-        getline(this->outStringStream, outString);
-        this->outFileStream << outString << " " << endl;
+        std::getline(this->outStringStream, outString);
+        this->outFileStream << outString << " " << std::endl;
     }
     this->outFileStream.close();
 }

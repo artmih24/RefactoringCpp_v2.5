@@ -31,12 +31,12 @@ CppClassMethod::CppClassMethod() {
 //    this->className = className;
 //}
 
-CppClassMethod::CppClassMethod(vector<string> methodTokens,
-                               string className, 
-                               vector<string> tokens,
-                               vector<CppClassField> fields, 
-                               vector<CppClassMethod> methods, 
-                               vector<CppClassConstructor> constructors) {
+CppClassMethod::CppClassMethod(std::vector<std::string> methodTokens,
+                               std::string className,
+                               std::vector<std::string> tokens,
+                               std::vector<CppClassField> fields,
+                               std::vector<CppClassMethod> methods,
+                               std::vector<CppClassConstructor> constructors) {
     accessMode = GetAccessMode(tokens);
     this->tokens = methodTokens;
     parameters = GetMethodParameters();
@@ -66,9 +66,9 @@ CppClassMethod::CppClassMethod(vector<string> methodTokens,
 //    this->className = className;
 //}
 
-vector<Parameter> CppClassMethod::GetMethodParameters() {
-    vector<string> tokens = this->tokens;
-    vector<Parameter> parameters = {};
+std::vector<Parameter> CppClassMethod::GetMethodParameters() {
+    std::vector<std::string> tokens = this->tokens;
+    std::vector<Parameter> parameters = {};
     bool params = false;
     int lexemesSize = tokens.size(),
         start = -1,
@@ -85,17 +85,15 @@ vector<Parameter> CppClassMethod::GetMethodParameters() {
     }
     for (int i = start + 1; i < j - 1; i += 3)
         if (tokens[i] != ")") {
-            Parameter parameter = {};
-            parameter.type = tokens[i];
-            parameter.name = tokens[i + 1];
+            Parameter parameter = Parameter(tokens[i], tokens[i + 1]);
             parameters.push_back(parameter);
         }
     return parameters;
 }
 
-vector<string> CppClassMethod::GetMethodBody() {
-    vector<string> tokens = this->tokens,
-        bodyTokens = {};
+std::vector<std::string> CppClassMethod::GetMethodBody() {
+    std::vector<std::string> tokens = this->tokens,
+                             bodyTokens = {};
     int tokensSize = tokens.size(),
         depth = 1,
         i = 0,
@@ -124,12 +122,12 @@ vector<string> CppClassMethod::GetMethodBody() {
     return {};
 }
 
-vector<string> CppClassMethod::GetUsingFields(vector<CppClassField> fields) {
-    vector<string> usingFields = {},
-        result = {},
-        tokens = this->tokens;
-    vector<CppClassField> classFields = fields;
-    for (string token : tokens)
+std::vector<std::string> CppClassMethod::GetUsingFields(std::vector<CppClassField> fields) {
+    std::vector<std::string> usingFields = {},
+                             result = {},
+                             tokens = this->tokens;
+    std::vector<CppClassField> classFields = fields;
+    for (std::string token : tokens)
         for (CppClassField classField : classFields) {
             if (token == classField.name) {
                 usingFields.push_back(classField.name);
@@ -141,9 +139,9 @@ vector<string> CppClassMethod::GetUsingFields(vector<CppClassField> fields) {
                 break;
             }
         }
-    for (string field : usingFields) {
+    for (std::string field : usingFields) {
         bool exists = false;
-        for (string res : result)
+        for (std::string res : result)
             if (res == field) {
                 exists = true;
                 break;
@@ -154,12 +152,12 @@ vector<string> CppClassMethod::GetUsingFields(vector<CppClassField> fields) {
     return result;
 }
 
-vector<CppClassMethod> CppClassMethod::GetUsingMethods(vector<CppClassMethod> methods) {
-    vector<string> tokens = this->tokens;
-    vector<CppClassMethod> usingMethods = {},
-        result = {},
-        classMethods = methods;
-    for (string token : tokens)
+std::vector<CppClassMethod> CppClassMethod::GetUsingMethods(std::vector<CppClassMethod> methods) {
+    std::vector<std::string> tokens = this->tokens;
+    std::vector<CppClassMethod> usingMethods = {},
+                                result = {},
+                                classMethods = methods;
+    for (std::string token : tokens)
         for (CppClassMethod classMethod : classMethods)
             if (token == classMethod.name) {
                 usingMethods.push_back(classMethod);
@@ -178,11 +176,11 @@ vector<CppClassMethod> CppClassMethod::GetUsingMethods(vector<CppClassMethod> me
     return result;
 }
 
-vector<CppClassConstructor> CppClassMethod::GetUsingConstructors(vector<CppClassConstructor> constructors) {
-    vector<string> tokens = this->tokens;
-    vector<CppClassConstructor> classConstructors = constructors,
-        result = {},
-        usingConstructors = {};
+std::vector<CppClassConstructor> CppClassMethod::GetUsingConstructors(std::vector<CppClassConstructor> constructors) {
+    std::vector<std::string> tokens = this->tokens;
+    std::vector<CppClassConstructor> classConstructors = constructors,
+                                     result = {},
+                                     usingConstructors = {};
     int valuesSize = 0;
     for (int i = 0; i < tokens.size(); i++)
         for (CppClassConstructor constructor : classConstructors)
@@ -213,8 +211,8 @@ CppClassDestructor CppClassMethod::GetUsingDestructor() {
     return this->usingDestructor;
 }
 
-AccessMode CppClassMethod::GetAccessMode(vector<string> tokens) {
-    vector<string> tokens_ = tokens;
+AccessMode CppClassMethod::GetAccessMode(std::vector<std::string> tokens) {
+    std::vector<std::string> tokens_ = tokens;
     AccessMode accessMode = AccessMode::Private;
     for (int i = 0; i < tokens.size(); i++)
         if (tokens_[i] == this->type &&
@@ -239,26 +237,26 @@ AccessMode CppClassMethod::GetAccessMode(vector<string> tokens) {
     return accessMode;
 }
 
-string CppClassMethod::GetClassName() {
+std::string CppClassMethod::GetClassName() {
     return this->tokens[1];
 }
 
-string CppClassMethod::GetMethodType() {
+std::string CppClassMethod::GetMethodType() {
     return this->tokens[0];
 }
 
-string CppClassMethod::GetMethodName() {
+std::string CppClassMethod::GetMethodName() {
     return this->tokens[1];
 }
 
-string CppClassMethod::GetMethodNameV2() {
+std::string CppClassMethod::GetMethodNameV2() {
     return this->tokens[4];
 }
 
-vector<string> CppClassMethod::ToTokens() {
-    vector<string> tokens = {},
-        body = this->body;
-    vector<Parameter> parameters = this->parameters;
+std::vector<std::string> CppClassMethod::ToTokens() {
+    std::vector<std::string> tokens = {},
+                             body = this->body;
+    std::vector<Parameter> parameters = this->parameters;
     int parametersSize = parameters.size(),
         bodySize = body.size();
     tokens.push_back(this->type);

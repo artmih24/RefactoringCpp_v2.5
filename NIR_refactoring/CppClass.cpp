@@ -14,7 +14,7 @@ CppClass::CppClass() {
 	classGraph = {};
 }
 
-CppClass::CppClass(vector<string> tokens, vector<string> possibleTypes) {
+CppClass::CppClass(std::vector<std::string> tokens, std::vector<std::string> possibleTypes) {
 	this->tokens = tokens;
 	name = tokens[1];
 	this->possibleTypes = possibleTypes;
@@ -27,8 +27,8 @@ CppClass::CppClass(vector<string> tokens, vector<string> possibleTypes) {
 }
 
 CppClassGraph CppClass::GetClassGraph() {
-	vector<vector<bool>> classGraphMatrix = {};
-	vector<bool> classGraphMatrixLine = {};
+	std::vector<std::vector<bool>> classGraphMatrix = {};
+	std::vector<bool> classGraphMatrixLine = {};
 	int fieldsSize = fields.size(),
 		methodsSize = methods.size(),
 		constructorsSize = constructors.size(),
@@ -109,7 +109,7 @@ CppClassGraph CppClass::GetClassGraph() {
 	for (i; i < fieldsSize + methodsSize + constructorsSize; i++) {
 		int ind = i - (fieldsSize + methodsSize);
 		for (j = 0; j < fieldsSize; j++)
-			for (string token : constructors[ind].tokens)
+			for (std::string token : constructors[ind].tokens)
 				if (token == fields[j].name) {
 					classGraphMatrix[i][j] = true;
 					classGraphMatrix[j][i] = true;
@@ -117,7 +117,7 @@ CppClassGraph CppClass::GetClassGraph() {
 				}
 		for (j; j < fieldsSize + methodsSize; j++) {
 			int indj = j - fieldsSize;
-			for (string token : constructors[ind].tokens)
+			for (std::string token : constructors[ind].tokens)
 				if (token == methods[indj].name) {
 					classGraphMatrix[i][j] = true;
 					classGraphMatrix[j][i] = true;
@@ -158,14 +158,14 @@ CppClassGraph CppClass::GetClassGraph() {
 	if (destructorsSize != 0) {
 		int ind = i - (fieldsSize + methodsSize + constructorsSize);
 		for (j = 0; j < fieldsSize; j++)
-			for (string token : destructor.tokens)
+			for (std::string token : destructor.tokens)
 				if (token == fields[j].name) {
 					classGraphMatrix[i][j] = true;
 					classGraphMatrix[j][i] = true;
 				}
 		for (j; j < fieldsSize + methodsSize; j++) {
 			int indj = j - fieldsSize;
-			for (string token : destructor.tokens)
+			for (std::string token : destructor.tokens)
 				if (token == methods[indj].name) {
 					classGraphMatrix[i][j] = true;
 					classGraphMatrix[j][i] = true;
@@ -213,21 +213,21 @@ CppClassGraph CppClass::GetClassGraph() {
 }
 
 void CppClass::GetFields() {
-	vector<CppClassField> classFields = {},
-		classFieldsFin = {};
-	vector<string> tokens = this->tokens;
+	std::vector<CppClassField> classFields = {},
+							   classFieldsFin = {};
+	std::vector<std::string> tokens = this->tokens;
 	int tokensSize = tokens.size(),
 		start = -1,
 		j = 0;
 	AccessMode fieldAccessMode = AccessMode::Private;
 	CppClassField classField = {};
-	string fieldType = "";
+	std::string fieldType = "";
 	for (int i = 0; i < tokensSize; i++) {
-		string fieldName = "";
+		std::string fieldName = "";
 		fieldAccessMode = AccessMode::Private;
 		classField = {};
 		int depth = 1;
-		for (string type : possibleTypes)
+		for (std::string type : possibleTypes)
 			if ((tokens[i] == type) || (tokens[i] == ",")) {
 				if (tokens[i] == type) {
 					fieldType = tokens[i];
@@ -310,14 +310,14 @@ void CppClass::GetFields() {
 }
 
 void CppClass::GetMethods() {
-	vector<CppClassMethod> methods = {};
-	vector<string> tokens = this->tokens,
-		types = possibleTypes;
+	std::vector<CppClassMethod> methods = {};
+	std::vector<std::string> tokens = this->tokens,
+							 types = possibleTypes;
 	int tokensSize = tokens.size(),
 		typesSize = types.size();
 	CppClassMethod newMethod = {};
 	for (int i = 0; i < tokensSize; i++) {
-		vector<string> curMethodTokens = {};
+		std::vector<std::string> curMethodTokens = {};
 		bool isType = false;
 		for (int j = 0; j < typesSize && !isType; j++) {
 			isType = ((tokens[i] == types[j]) &&
@@ -367,14 +367,14 @@ void CppClass::GetMethods() {
 }
 
 void CppClass::GetConstructors() {
-	vector<CppClassConstructor> constructors = {};
-	vector<string> tokens = this->tokens,
-		types = possibleTypes;
+	std::vector<CppClassConstructor> constructors = {};
+	std::vector<std::string> tokens = this->tokens,
+							 types = possibleTypes;
 	int tokensSize = tokens.size(),
 		typesSize = types.size();
 	CppClassConstructor newConstructor = {};
 	for (int i = 0; i < tokensSize; i++) {
-		vector<string> curMethodTokens = {};
+		std::vector<std::string> curMethodTokens = {};
 		if (i > 0 && 
 			tokens[i - 1] != "class" && 
 			tokens[i] == name) {
@@ -419,12 +419,12 @@ void CppClass::GetConstructors() {
 }
 
 void CppClass::GetDestructor() {
-	vector<string> tokens = this->tokens,
-		types = possibleTypes;
+	std::vector<std::string> tokens = this->tokens,
+							 types = possibleTypes;
 	int tokensSize = tokens.size(),
 		typesSize = types.size();
 	for (int i = 0; i < tokensSize; i++) {
-		vector<string> curMethodTokens = {};
+		std::vector<std::string> curMethodTokens = {};
 		if (i > 0 && tokens[i] == name && 
 			(tokens[i - 1] == "~")) {
 			int depth = 1,
@@ -473,9 +473,7 @@ void CppClass::CreateConstructor() {
 		newConstructor.accessMode = AccessMode::Public;
 		newConstructor.parameters = {};
 		for (CppClassField field : fields) {
-			Parameter newParameter = {};
-			newParameter.type = field.type;
-			newParameter.name = field.name;
+			Parameter newParameter = Parameter(field.type, field.name);
 			newConstructor.parameters.push_back(newParameter);
 		}
 		newConstructor.tokens = {};
@@ -538,8 +536,8 @@ bool CppClass::GetFlag(AccessMode accessMode) {
 	return false;
 }
 
-vector<string> CppClass::GetTokens(AccessMode accessMode) {
-	vector<string> tokens = {};
+std::vector<std::string> CppClass::GetTokens(AccessMode accessMode) {
+	std::vector<std::string> tokens = {};
 	for (CppClassField field : fields)
 		if (field.accessMode == accessMode) {
 			tokens.push_back("\n");
@@ -555,7 +553,7 @@ vector<string> CppClass::GetTokens(AccessMode accessMode) {
 		tokens.push_back("\n");
 	for (CppClassConstructor constructor : constructors)
 		if (constructor.accessMode == accessMode) {
-			for (string token : constructor.tokens)
+			for (std::string token : constructor.tokens)
 				tokens.push_back(token);
 		}
 	for (CppClassMethod method : methods)
@@ -576,7 +574,7 @@ vector<string> CppClass::GetTokens(AccessMode accessMode) {
 					tokens.push_back(",");
 			}
 			tokens.push_back(")");
-			for (string token : method.body)
+			for (std::string token : method.body)
 				tokens.push_back(token);
 			//tokens.push_back("\n");
 		}
@@ -586,7 +584,7 @@ vector<string> CppClass::GetTokens(AccessMode accessMode) {
 			tokens.push_back(name);
 			tokens.push_back("(");
 			tokens.push_back(")");
-			for (string token : destructor.tokens)
+			for (std::string token : destructor.tokens)
 				tokens.push_back(token);
 		}
 	}
@@ -595,22 +593,22 @@ vector<string> CppClass::GetTokens(AccessMode accessMode) {
 	return tokens;
 }
 
-vector<string> CppClass::ToTokens() {
-	vector<string> tokens = {},
-		newTokens = {};
+std::vector<std::string> CppClass::ToTokens() {
+	std::vector<std::string> tokens = {},
+							 newTokens = {};
 	tokens.push_back("class");
 	tokens.push_back(name);
 	tokens.push_back("{");
 	tokens.push_back("\n");
 	bool publicFlag = GetFlag(AccessMode::Public),
-		privateFlag = GetFlag(AccessMode::Private),
-		protectedFlag = GetFlag(AccessMode::Protected);
+		 privateFlag = GetFlag(AccessMode::Private),
+		 protectedFlag = GetFlag(AccessMode::Protected);
 	if (publicFlag || privateFlag || protectedFlag) {
 		if (publicFlag) {
 			newTokens = GetTokens(AccessMode::Public);
 			if (newTokens.size() != 0) {
 				tokens.push_back("public:");
-				for (string token : newTokens)
+				for (std::string token : newTokens)
 					tokens.push_back(token);
 			}
 		}
@@ -618,16 +616,16 @@ vector<string> CppClass::ToTokens() {
 			newTokens = GetTokens(AccessMode::Private);
 			if (newTokens.size() != 0) {
 				tokens.push_back("private:");
-				for (string lexeme : newTokens)
-					tokens.push_back(lexeme);
+				for (std::string token : newTokens)
+					tokens.push_back(token);
 			}
 		}
 		if (protectedFlag) {
 			newTokens = GetTokens(AccessMode::Protected);
 			if (newTokens.size() != 0) {
 				tokens.push_back("protected:");
-				for (string lexeme : newTokens)
-					tokens.push_back(lexeme);
+				for (std::string token : newTokens)
+					tokens.push_back(token);
 			}
 		}
 	}
@@ -635,8 +633,8 @@ vector<string> CppClass::ToTokens() {
 		newTokens = GetTokens(AccessMode::Private);
 		if (newTokens.size() != 0) {
 			tokens.push_back("private:");
-			for (string lexeme : newTokens)
-				tokens.push_back(lexeme);
+			for (std::string token : newTokens)
+				tokens.push_back(token);
 		}
 	}
 	tokens.push_back("}");

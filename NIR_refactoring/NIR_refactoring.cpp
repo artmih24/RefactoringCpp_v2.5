@@ -4,16 +4,15 @@
 
 #include <clocale>
 #include <iostream>
-using namespace std;
 
 #include "RefactoringManager.h"
 
 /// <summary>Ввод пути к файлу исходного кода</summary>
 /// <returns>путь к файлу исходного кода</returns>
-string GetFilePath() {
-    string filePath = "";
-    cout << "Введите полное имя файла (включающее полный путь)\n";
-    cin >> filePath;
+std::string GetFilePath() {
+    std::string filePath = "";
+    std::cout << "Введите полное имя файла (включающее полный путь)\n";
+    std::cin >> filePath;
     return filePath;
 }
 
@@ -23,7 +22,7 @@ string GetFilePath() {
 /// <returns>0</returns>
 int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "Russian");
-    string filePath = "";
+    std::string filePath = "";
     filePath = argc > 1 ? argv[1] : GetFilePath();
     RefactoringManager refactoringManager = RefactoringManager(filePath);
     refactoringManager.Refactoring();

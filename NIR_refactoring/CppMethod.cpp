@@ -11,7 +11,7 @@ CppMethod::CppMethod() {
     name = "";
 }
 
-CppMethod::CppMethod(vector<string> lexemes_) {
+CppMethod::CppMethod(std::vector<std::string> lexemes_) {
     tokens = lexemes_;
     parameters = this->GetMethodParameters();
     oldParameters = this->GetMethodParameters();
@@ -20,9 +20,9 @@ CppMethod::CppMethod(vector<string> lexemes_) {
     name = this->GetMethodName();
 }
 
-vector<Parameter> CppMethod::GetMethodParameters() {
-    vector<string> tokens = this->tokens;
-    vector<Parameter> parameters = {};
+std::vector<Parameter> CppMethod::GetMethodParameters() {
+    std::vector<std::string> tokens = this->tokens;
+    std::vector<Parameter> parameters = {};
     bool params = false;
     int tokensSize = tokens.size(),
         start = -1,
@@ -39,16 +39,14 @@ vector<Parameter> CppMethod::GetMethodParameters() {
     }
     for (int i = start + 1; i < j - 1; i += 3)
         if (tokens[i] != ")") {
-            Parameter parameter = {};
-            parameter.type = tokens[i];
-            parameter.name = tokens[i + 1];
+            Parameter parameter = Parameter(tokens[i], tokens[i + 1]);
             parameters.push_back(parameter);
         }
     return parameters;
 }
 
-vector<string> CppMethod::GetMethodBody() {
-    vector<string> tokens = this->tokens,
+std::vector<std::string> CppMethod::GetMethodBody() {
+    std::vector<std::string> tokens = this->tokens,
         bodyTokens = {};
     int tokensSize = tokens.size(),
         depth = 0, 
@@ -78,23 +76,22 @@ vector<string> CppMethod::GetMethodBody() {
     return {};
 }
 
-string CppMethod::GetMethodType() {
+std::string CppMethod::GetMethodType() {
     return this->tokens[0];
 }
 
-string CppMethod::GetMethodName() {
+std::string CppMethod::GetMethodName() {
     return this->tokens[1];
 }
 
-vector<string> CppMethod::GetTokens()
-{
+std::vector<std::string> CppMethod::GetTokens() {
     return this->tokens;
 }
 
-vector<string> CppMethod::ToTokens() {
-    vector<string> tokens = {},
+std::vector<std::string> CppMethod::ToTokens() {
+    std::vector<std::string> tokens = {},
         body = this->body;
-    vector<Parameter> parameters = this->parameters;
+    std::vector<Parameter> parameters = this->parameters;
     int parametersSize = parameters.size(),
         bodySize = body.size();
     tokens.push_back(this->type);

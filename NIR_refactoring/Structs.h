@@ -9,8 +9,8 @@
 
 struct CppClassField {
     std::string type,                    // тип значения
-        name,                       // название переменной
-        value;
+                name,                    // название переменной
+                value;
     AccessMode accessMode;
 };
 
@@ -25,19 +25,19 @@ struct CppClassGraph {
 
 struct ObjectFieldParameter {
     std::string objectName,
-        className;
+                className;
     CppClassField classField;
 };
 
 struct ClassMethodCallParameter {
     std::string objectName,
-        className;
+                className;
     MethodCall methodCall;
 };
 
 struct Object {
     std::string name,
-        className;
+                className;
     std::vector<ObjectFieldParameter> objectFields;
 };
 

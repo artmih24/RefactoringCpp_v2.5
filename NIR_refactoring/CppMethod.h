@@ -4,50 +4,49 @@
 
 #include <cstring>
 #include <vector>
-using namespace std;
 
 #include "Structs2.h"
 
 /// <summary>Класс метода</summary>
 class CppMethod {
 private:
-    vector<string> tokens;         // лексемы метода
+    std::vector<std::string> tokens;    // токены метода
 
 public:
-    vector<Parameter> parameters,   // параметры метода
-        oldParameters;              // старые параметры метода
+    std::vector<Parameter> parameters,       // параметры метода
+                      oldParameters;    // старые параметры метода
 
-    vector<string> body;            // лексемы тела метода
+    std::vector<std::string> body;      // токены тела метода
 
-    string type,                    // тип возвращаемого значения
-        name;                       // название метода
+    std::string type,                   // тип возвращаемого значения
+                name;                   // название метода
 
     /// <summary>Конструктор объекта класса CppMethod</summary>
     CppMethod();
 
     /// <summary>Конструктор объекта класса CppMethod</summary>
-    /// <param name="lexemes">- список лексем</param>
-    CppMethod(vector<string> tokens);
+    /// <param name="lexemes">- список токенов</param>
+    CppMethod(std::vector<std::string> tokens);
 
     /// <summary>Получение списка параметров метода</summary>
     /// <returns>Список параметров метода</returns>
-    vector<Parameter> GetMethodParameters();
+    std::vector<Parameter> GetMethodParameters();
 
     /// <summary>Получение лексем тела метода</summary>
     /// <returns>Список лексем тела метода</returns>
-    vector<string> GetMethodBody();
+    std::vector<std::string> GetMethodBody();
 
     /// <summary>Получения типа возвращаемого значения метода</summary>
     /// <returns>Тип возвращаемого значения</returns>
-    string GetMethodType();
+    std::string GetMethodType();
 
     /// <summary>Получение названия метода</summary>
     /// <returns>Название метода</returns>
-    string GetMethodName();
+    std::string GetMethodName();
 
-    vector<string> GetTokens();
+    std::vector<std::string> GetTokens();
 
     /// <summary>Получение списока лексем</summary>
     /// <returns>Список лексем</returns>
-    vector<string> ToTokens();
+    std::vector<std::string> ToTokens();
 };

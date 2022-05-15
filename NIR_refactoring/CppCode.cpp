@@ -13,7 +13,7 @@ CppCode::CppCode() {
 }
 
 /// <summary>Конструктор класса</summary>
-CppCode::CppCode(string cppCode) {
+CppCode::CppCode(std::string cppCode) {
     this->cppCode = cppCode;
     this->tokens = this->GetTokens();
     this->methods = this->GetMethods();
@@ -47,7 +47,7 @@ CppCode::CppCode(string cppCode) {
     };
 }
 
-vector<string> CppCode::GetStdTypes() {
+std::vector<std::string> CppCode::GetStdTypes() {
     return {
         "bool",
         "char", "__int8", "int8_t",
@@ -77,8 +77,8 @@ vector<string> CppCode::GetStdTypes() {
 }
 
 /// <summary>Дополнительные действия для разбиения кода на лексемы</summary>
-string CppCode::Modify() {
-    string modCode = this->cppCode;
+std::string CppCode::Modify() {
+    std::string modCode = this->cppCode;
     for (int i = 0; i < modCode.length(); i++) {
         if (((modCode[i + 1] == '(') || (modCode[i + 1] == ')') ||
             (modCode[i + 1] == '{') || (modCode[i + 1] == '}') ||
@@ -110,15 +110,15 @@ string CppCode::Modify() {
     return modCode;
 }
 
-/// <summary>Разбиение кода на лексемы</summary>
-vector<string> CppCode::GetTokens() {
+/// <summary>Разбиение кода на токены</summary>
+std::vector<std::string> CppCode::GetTokens() {
     setlocale(LC_ALL, "Russian");
-    vector<string> tokens = {};
+    std::vector<std::string> tokens = {};
     const char* separators = " \n\t";
-    string modCppCode = this->Modify();
-    istringstream ssCppCode(modCppCode + " ₽₴.");
+    std::string modCppCode = this->Modify();
+    std::istringstream ssCppCode(modCppCode + " ₽₴.");
     while (1) {
-        string token = "";
+        std::string token = "";
         ssCppCode >> token;
         if (token == "₽₴.")
             break;
@@ -132,33 +132,33 @@ vector<string> CppCode::GetTokens() {
     return tokens;
 }
 
-/// <summary>Разбиение кода на лексемы</summary>
-vector<string> CppCode::GetTokensV2() {
-    vector<string> tokens = {};
-    string cppCode = this->cppCode;
+/// <summary>Разбиение кода на токены</summary>
+std::vector<std::string> CppCode::GetTokensV2() {
+    std::vector<std::string> tokens = {};
+    std::string cppCode = this->cppCode;
     int lenOfCppCode = cppCode.length();
     for (int i = 0; i < lenOfCppCode; i++)
         for (int j = i + 1; j < lenOfCppCode - i - 1; j++) {
-            string codeSubStr = cppCode.substr(i, j);
-            for (string str : this->keyWordsSet)
+            std::string codeSubStr = cppCode.substr(i, j);
+            for (std::string str : this->keyWordsSet)
                 if (codeSubStr == str) {
                     tokens.push_back(codeSubStr);
                     i = j;
                     break;
                 }
-            for (string str : this->types)
+            for (std::string str : this->types)
                 if (codeSubStr == str) {
                     tokens.push_back(codeSubStr);
                     i = j;
                     break;
                 }
-            for (string str : this->specSymbolsSet)
+            for (std::string str : this->specSymbolsSet)
                 if (codeSubStr == str) {
                     tokens.push_back(codeSubStr);
                     i = j;
                     break;
                 }
-            if (regex_match(codeSubStr, regex("[a-zA-Z0-9_]+"))) {
+            if (regex_match(codeSubStr, std::regex("[a-zA-Z0-9_]+"))) {
                 tokens.push_back(codeSubStr);
                 i = j;
                 break;
@@ -170,8 +170,8 @@ vector<string> CppCode::GetTokensV2() {
 /// <summary>Получение типов данных, описанных в коде</summary>
 /// <param name="type">- способ объявления пользовательского типа</param>
 /// <returns>вектор пользовательских типов данных</returns>
-vector<string> CppCode::GetTypes(string type) {
-    vector<string> types = {},
+std::vector<std::string> CppCode::GetTypes(std::string type) {
+    std::vector<std::string> types = {},
         tokens = this->tokens;
     int tokensSize = tokens.size();
     for (int i = 0; i < tokensSize; i++)
@@ -184,9 +184,9 @@ vector<string> CppCode::GetTypes(string type) {
 
 /// <summary>Получение вектора методов</summary>
 /// <returns>- вектор методов в коде</returns>
-vector<CppMethod> CppCode::GetMethods() {
-    vector<CppMethod> methods = {};
-    vector<string> types = this->GetStdTypes(),
+std::vector<CppMethod> CppCode::GetMethods() {
+    std::vector<CppMethod> methods = {};
+    std::vector<std::string> types = this->GetStdTypes(),
         tokens = this->tokens,
         typedefs = this->GetTypes("typedef"),
         structs = this->GetTypes("struct"),
@@ -209,7 +209,7 @@ vector<CppMethod> CppCode::GetMethods() {
     int typesSize = types.size(),
         tokensSize = tokens.size();
     for (int i = 0; i < tokensSize; i++) {
-        vector<string> curMethod = {};
+        std::vector<std::string> curMethod = {};
         bool isType = false;
         for (int j = 0; j < typesSize && !isType; j++)
             isType = ((tokens[i] == types[j]) &&
@@ -238,9 +238,9 @@ vector<CppMethod> CppCode::GetMethods() {
     return methods;
 }
 
-vector<CppClass> CppCode::GetClasses() {
-    vector<CppClass> classes = {};
-    vector<string> tokens = this->tokens,
+std::vector<CppClass> CppCode::GetClasses() {
+    std::vector<CppClass> classes = {};
+    std::vector<std::string> tokens = this->tokens,
         newClassTokens = {};
     int tokensSize = tokens.size(),
         j = 0,
@@ -266,16 +266,16 @@ vector<CppClass> CppCode::GetClasses() {
     return classes;
 }
 
-vector<MethodCall> CppCode::GetMethodCalls(CppMethod cppMethod) {
-    vector<string> tokens = this->tokens;
+std::vector<MethodCall> CppCode::GetMethodCalls(CppMethod cppMethod) {
+    std::vector<std::string> tokens = this->tokens;
     int tokensSize = tokens.size(),
         parametersSize = cppMethod.parameters.size(),
         j = 0,
         k = 0,
         depth = 0;
-    string cppMethodName = cppMethod.name,
+    std::string cppMethodName = cppMethod.name,
         parameterValue = "";
-    vector<MethodCall> methodCalls = {};
+    std::vector<MethodCall> methodCalls = {};
     for (int i = 0; i < tokens.size(); i++)
         if (tokens[i] == cppMethodName) {
             MethodCall methodCall = {};
@@ -311,7 +311,7 @@ vector<MethodCall> CppCode::GetMethodCalls(CppMethod cppMethod) {
 }
 
 void CppCode::UpdateMethodCalls(CppMethod cppMethod) {
-    vector<string> tokens = this->tokens,
+    std::vector<std::string> tokens = this->tokens,
         newTokens = {};
     int tokensSize = tokens.size(),
         parametersSize = cppMethod.parameters.size(),
@@ -319,7 +319,7 @@ void CppCode::UpdateMethodCalls(CppMethod cppMethod) {
         j = 0,
         k = 0,
         depth = 0;
-    string cppMethodName = cppMethod.name,
+    std::string cppMethodName = cppMethod.name,
         parameterValue = "";
     for (int i = 0; i < tokens.size(); i++)
         if (tokens[i] != cppMethodName) {
@@ -383,7 +383,7 @@ void CppCode::UpdateMethodCalls(CppMethod cppMethod) {
 
 void CppCode::UpdateMethodCalls(CppMethod cppMethod, MethodCall methodCall, MethodCall newMethodCall) {
     if (methodCall.methodName == cppMethod.name) {
-        vector<string> tokens = this->tokens,
+        std::vector<std::string> tokens = this->tokens,
             newTokens = {};
         int tokensSize = tokens.size();
         for (int i = 0; i < tokensSize; i++)
@@ -419,10 +419,10 @@ void CppCode::UpdateMethodCalls(CppMethod cppMethod, MethodCall methodCall, Meth
 
 void CppCode::UpdateMethodCallsV2(CppMethod cppMethod, MethodCall methodCall, MethodCall newMethodCall) {
     if (methodCall.methodName == cppMethod.name) {
-        vector<CppMethod> methods = this->methods;
+        std::vector<CppMethod> methods = this->methods;
         int methodsSize = methods.size();
         for (int i = 0; i < methodsSize; i++) {
-            vector<string> tokens = methods[i].GetTokens(),
+            std::vector<std::string> tokens = methods[i].GetTokens(),
                 newLexemes = {};
             if (tokens.size() == 0) {
                 tokens = methods[i].ToTokens();
@@ -474,11 +474,11 @@ void CppCode::UpdateMethodCallsV2(CppMethod cppMethod, MethodCall methodCall, Me
     }
 }
 
-void CppCode::UpdateMethods(vector<CppMethod> methods) {
+void CppCode::UpdateMethods(std::vector<CppMethod> methods) {
     int methodsSize = methods.size();
     for (int i = 0; i < methodsSize; i++) {
         if (methods[i].name == "main") {
-            vector<CppMethod> buff = {};
+            std::vector<CppMethod> buff = {};
             while (methods[methods.size() - 1].name != "main") {
                 buff.push_back(methods[methods.size() - 1]);
                 methods.pop_back();
@@ -496,9 +496,9 @@ void CppCode::UpdateMethods(vector<CppMethod> methods) {
 }
 
 void CppCode::UpdateTokens() {
-    vector<string> newTokens = {},
+    std::vector<std::string> newTokens = {},
         curTokens = this->tokens;
-    vector<CppMethod> methods = this->methods;
+    std::vector<CppMethod> methods = this->methods;
     int methodsSize = methods.size(),
         curTokensSize = curTokens.size();
     for (int i = 0; i < methodsSize; i++) {
@@ -518,7 +518,7 @@ void CppCode::UpdateTokens() {
                     }
                 }
                 j = k;
-                vector<string> newMethodTokens = methods[i].ToTokens();
+                std::vector<std::string> newMethodTokens = methods[i].ToTokens();
                 int newMethodTokensSize = newMethodTokens.size();
                 for (int l = 0; l < newMethodTokensSize; l++)
                     newTokens.push_back(newMethodTokens[l]);
@@ -533,9 +533,9 @@ void CppCode::UpdateTokens() {
 }
 
 void CppCode::UpdateTokensV2() {
-    vector<string> newTokens = {},
+    std::vector<std::string> newTokens = {},
         curTokens = this->tokens;
-    vector<CppMethod> methods = this->methods;
+    std::vector<CppMethod> methods = this->methods;
     int methodsSize = methods.size(),
         curTokensSize = curTokens.size();
     for (int i = 0; i < methodsSize; i++) {
@@ -564,7 +564,7 @@ void CppCode::UpdateTokensV2() {
                         }
                     }
                     j = k;
-                    vector<string> newMethodTokens = methods[i].ToTokens();
+                    std::vector<std::string> newMethodTokens = methods[i].ToTokens();
                     int newMethodTokensSize = newMethodTokens.size();
                     for (int l = 0; l < newMethodTokensSize; l++)
                         newTokens.push_back(newMethodTokens[l]);
@@ -583,7 +583,7 @@ void CppCode::UpdateTokensV2() {
                     (curTokens[j] == methods[i + 1].type) &&
                     (curTokens[j + 1] == methods[i + 1].name)) {
                     nextMethodIsNew = true;
-                    vector<string> newMethodTokens = methods[i].ToTokens();
+                    std::vector<std::string> newMethodTokens = methods[i].ToTokens();
                     int newMethodTokensSize = newMethodTokens.size();
                     for (int l = 0; l < newMethodTokensSize; l++)
                         newTokens.push_back(newMethodTokens[l]);
@@ -598,10 +598,10 @@ void CppCode::UpdateTokensV2() {
 }
 
 void CppCode::UpdateTokensV3() {
-    vector<string> newTokens = {},
+    std::vector<std::string> newTokens = {},
         curTokens = this->tokens;
-    vector<CppMethod> methods = this->methods;
-    vector<CppClass> classes = this->classes;
+    std::vector<CppMethod> methods = this->methods;
+    std::vector<CppClass> classes = this->classes;
     int methodsSize = methods.size(),
         classesSize = classes.size(),
         curTokensSize = curTokens.size();
@@ -632,7 +632,7 @@ void CppCode::UpdateTokensV3() {
                         }
                     }
                     j = k;
-                    vector<string> newClassTokens = classes[i].ToTokens();
+                    std::vector<std::string> newClassTokens = classes[i].ToTokens();
                     int newClassTokensSize = newClassTokens.size() - 1;
                     for (int l = 0; l < newClassTokensSize; l++)
                         newTokens.push_back(newClassTokens[l]);
@@ -654,7 +654,7 @@ void CppCode::UpdateTokensV3() {
                     (curTokens[j - 1] == "}") &&
                     (curTokens[j] == ";"))) {
                     nextClassIsNew = true;
-                    vector<string> newClassTokens = classes[i].ToTokens();
+                    std::vector<std::string> newClassTokens = classes[i].ToTokens();
                     int newClassTokensSize = newClassTokens.size() - 1;
                     newTokens.push_back(";");
                     newTokens.push_back("\n");
@@ -700,7 +700,7 @@ void CppCode::UpdateTokensV3() {
                         }
                     }
                     j = k;
-                    vector<string> newMethodTokens = methods[i].ToTokens();
+                    std::vector<std::string> newMethodTokens = methods[i].ToTokens();
                     int newMethodTokensSize = newMethodTokens.size();
                     for (int l = 0; l < newMethodTokensSize; l++)
                         newTokens.push_back(newMethodTokens[l]);
@@ -720,7 +720,7 @@ void CppCode::UpdateTokensV3() {
                     (curTokens[j] == methods[i + 1].type) &&
                     (curTokens[j + 1] == methods[i + 1].name)) {
                     nextMethodIsNew = true;
-                    vector<string> newMethodTokens = methods[i].ToTokens();
+                    std::vector<std::string> newMethodTokens = methods[i].ToTokens();
                     int newMethodTokensSize = newMethodTokens.size();
                     for (int l = 0; l < newMethodTokensSize; l++)
                         newTokens.push_back(newMethodTokens[l]);
@@ -734,22 +734,22 @@ void CppCode::UpdateTokensV3() {
     this->tokens = curTokens;
 }
 
-string CppCode::ToString() {
-    stringstream cppCodeStream;
-    vector<string> tokens = this->tokens;
+std::string CppCode::ToString() {
+    std::stringstream cppCodeStream;
+    std::vector<std::string> tokens = this->tokens;
     int tokensSize = tokens.size();
     for (int i = 0; i < tokensSize; i++) {
-        string sep = (i < tokensSize - 1 ? this->GetSep(tokens[i], tokens[i + 1]) : " ");
+        std::string sep = (i < tokensSize - 1 ? this->GetSep(tokens[i], tokens[i + 1]) : " ");
         cppCodeStream << tokens[i] << sep;
     }
     return cppCodeStream.str();
 }
 
-string CppCode::GetCode() {
+std::string CppCode::GetCode() {
     return this->cppCode;
 }
 
-string CppCode::GetSep(string curLexeme, string nxtLexeme) {
+std::string CppCode::GetSep(std::string curLexeme, std::string nxtLexeme) {
     if ((curLexeme == "/" || curLexeme == "<" || curLexeme == ">" || curLexeme == "=") && nxtLexeme == curLexeme)
         return "";
     else if (curLexeme == "if" && nxtLexeme == "(")
@@ -775,6 +775,6 @@ string CppCode::GetSep(string curLexeme, string nxtLexeme) {
         return " ";
 }
 
-void CppCode::UpdateCode(string code) {
+void CppCode::UpdateCode(std::string code) {
     this->cppCode = code;
 }

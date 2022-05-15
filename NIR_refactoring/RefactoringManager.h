@@ -8,7 +8,6 @@
 #include <iostream>
 #include <iomanip>
 #include <regex>
-using namespace std;
 
 #include "CppCode.h"
 #include "CppClasses.h"
@@ -16,23 +15,23 @@ using namespace std;
 /// <summary>Класс, предназначенный для проведения рефакторинга</summary>
 class RefactoringManager {
 private:
-    string filePath,            // полный путь к исходному файлу
-        outFilePath,            // полный путь к новому файлу
-        fileContent;            // строка, содержащая код
+    std::string filePath,               // полный путь к исходному файлу
+                outFilePath,            // полный путь к новому файлу
+                fileContent;            // строка, содержащая код
 
-    ifstream fileStream;        // поток чтения из файла
+    std::ifstream fileStream;           // поток чтения из файла
 
-    ofstream outFileStream;     // поток записи в файл
+    std::ofstream outFileStream;        // поток записи в файл
 
-    stringstream stringStream,  // поток для построчного считывания
-        outStringStream;        // поток для построчной записи
+    std::stringstream stringStream,     // поток для построчного считывания
+                      outStringStream;  // поток для построчной записи
 
-    CppCode code;               // код на С/С++, рефакторинг которого требуется провести
+    CppCode code;                       // код на С/С++, рефакторинг которого требуется провести
 
 public:
     /// <summary>Конструктор объекта класса RefactoringManager</summary>
     /// <param name="filePath">- путь к файлу с исходным кодом</param>
-    RefactoringManager(string filePath);
+    RefactoringManager(std::string filePath);
 
     /// <summary>Проведение рефакторинга</summary>
     void Refactoring();
@@ -74,22 +73,22 @@ public:
     /// <param name="cppClass">- класс, из которого будет извлечен новый класс</param>
     /// <param name="methodsNums">- номера методов, которые будут перемещены в новый класс</param>
     /// <returns>Два новых класса, полученных из исходного</returns>
-    CppClasses ExtractClass(CppClass cppClass, vector<int> methodsNums);
+    CppClasses ExtractClass(CppClass cppClass, std::vector<int> methodsNums);
 
-    set<int> GetMethodNumbers(string input);
+    std::set<int> GetMethodNumbers(std::string input);
 
     /// <summary>Составление названия файла, в котором будет содержаться измененный код</summary>
     /// <param name="filePath">- полное название исходного файла</param>
     /// <returns>название файла, в котором будет содержаться измененный код</returns>
-    string GetOutputFileName(string filePath);
+    std::string GetOutputFileName(std::string filePath);
 
     /// <summary>Чтение файла</summary>
     /// <param name="filePath">- полное название файла</param>
-    void GetFileContent(string filePath);
+    void GetFileContent(std::string filePath);
 
     /// <summary>Запись в файл</summary>
     /// <param name="filePath">- полное название файла</param>
-    void WriteFile(string filePath);
+    void WriteFile(std::string filePath);
 
-    void FormatFile(string filePath);
+    void FormatFile(std::string filePath);
 };

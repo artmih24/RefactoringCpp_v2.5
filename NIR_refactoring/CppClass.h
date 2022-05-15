@@ -13,21 +13,21 @@
 class CppClass
 {
 private:
-	vector<string> possibleTypes;	// возможные типы данных
+	std::vector<std::string> possibleTypes;		// возможные типы данных
 
-	set<string> types;				// типы данных
+	std::set<std::string> types;				// типы данных
 
 public:
-	string name;								// название класса
-	vector<string> tokens;						// токены кода класса
-	vector<CppClassField> fields;				// поля класса
-	vector<CppClassMethod> methods;				// методы класса
-	vector<CppClassConstructor> constructors;	// конструкторы класса
+	std::string name;								// название класса
+	std::vector<std::string> tokens;						// токены кода класса
+	std::vector<CppClassField> fields;				// поля класса
+	std::vector<CppClassMethod> methods;				// методы класса
+	std::vector<CppClassConstructor> constructors;	// конструкторы класса
 	CppClassDestructor destructor;				// деструкторы класса
 	CppClassGraph classGraph;					// граф связности полей, методов, конструкторов и деструкторов класса
 
 	CppClass();
-	CppClass(vector<string> tokens, vector<string> possibleTypes);
+	CppClass(std::vector<std::string> tokens, std::vector<std::string> possibleTypes);
 
 	CppClassGraph GetClassGraph();
 
@@ -49,8 +49,8 @@ public:
 
 	bool GetFlag(AccessMode accessMode);
 
-	vector<string> GetTokens(AccessMode accessMode);
+	std::vector<std::string> GetTokens(AccessMode accessMode);
 
-	vector<string> ToTokens();
+	std::vector<std::string> ToTokens();
 };
 

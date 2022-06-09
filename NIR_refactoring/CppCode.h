@@ -3,6 +3,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <set>
 #include <clocale>
 #include <sstream>
 #include <regex>
@@ -35,6 +36,8 @@ public:
 
     /// <summary>Дополнительные действия для разбиения кода на лексемы</summary>
     std::string Modify();
+
+    std::string ModifyV2();
 
     /// <summary>Токенизация кода</summary>
     std::vector<std::string> GetTokens();

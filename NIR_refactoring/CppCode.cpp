@@ -106,6 +106,24 @@ std::string CppCode::Modify() {
     return modCode;
 }
 
+/// <summary>Дополнительные действия для разбиения кода на лексемы</summary>
+std::string CppCode::ModifyV2() {
+    std::string modCode = this->cppCode;
+    for (int i = 0; i < modCode.length(); i++) {
+        std::set<char> chars = {'(', ')', '{', '}', ';', ',', '=', '+', '-', '*', '/', '%', '&', '|'};
+        if ((chars.find(modCode[i + 1]) != chars.end()) && (i < (modCode.length() - 1)))
+            modCode.insert(++i, " ");
+        if ((chars.find(modCode[i]) != chars.end()) ||
+            (((modCode[i] == '<') || (modCode[i] == '>')) &&
+                (modCode[i - 1] == modCode[i]) && (i > 0)))
+            modCode.insert((i + 1), " ");
+        if (((modCode[i + 1] == '<') || (modCode[i + 1] == '>')) &&
+            (modCode[i + 2] == modCode[i + 1]) && (i < (modCode.length() - 2)))
+            modCode.insert((i += 2), " ");
+    }
+    return modCode;
+}
+
 
 /// <summary>Разбиение кода на токены</summary>
 std::vector<std::string> CppCode::GetTokens() {

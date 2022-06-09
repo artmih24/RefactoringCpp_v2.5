@@ -113,6 +113,7 @@ std::string CppCode::ModifyV2() {
         std::set<char> chars = {'(', ')', '{', '}', ';', ',', '=', '+', '-', '*', '/', '%', '&', '|'};
         if ((chars.find(modCode[i + 1]) != chars.end()) && (i < (modCode.length() - 1)))
             modCode.insert(++i, " ");
+        chars = {'(', ')', '{', '}', ';', ':', ',', '=', '+', '-', '*', '/', '%', '&', '|'};
         if ((chars.find(modCode[i]) != chars.end()) ||
             (((modCode[i] == '<') || (modCode[i] == '>')) &&
                 (modCode[i - 1] == modCode[i]) && (i > 0)))
@@ -130,7 +131,7 @@ std::vector<std::string> CppCode::GetTokens() {
     setlocale(LC_ALL, "Russian");
     std::vector<std::string> tokens = {};
     const char* separators = " \n\t";
-    std::string modCppCode = this->Modify(),
+    std::string modCppCode = this->ModifyV2(),
         lineCppCode,
         lineCppCodeToTab;
     std::istringstream ssCppCode(modCppCode),

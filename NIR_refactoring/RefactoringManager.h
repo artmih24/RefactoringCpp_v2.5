@@ -74,6 +74,7 @@ public:
     /// <param name="methodsNums">- номера методов, которые будут перемещены в новый класс</param>
     /// <returns>Два новых класса, полученных из исходного</returns>
     CppClasses ExtractClass(CppClass cppClass, std::vector<int> methodsNums);
+    CppClasses ExtractClassV2(CppClass cppClass, std::vector<int> methodsNums);
 
     std::set<int> GetMethodNumbers(std::string input);
 

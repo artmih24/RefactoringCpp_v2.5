@@ -11,8 +11,8 @@ CppMethod::CppMethod() {
     name = "";
 }
 
-CppMethod::CppMethod(std::vector<std::string> lexemes_) {
-    tokens = lexemes_;
+CppMethod::CppMethod(std::vector<std::string> tokens_) {
+    tokens = tokens_;
     parameters = this->GetMethodParameters();
     oldParameters = this->GetMethodParameters();
     body = this->GetMethodBody();

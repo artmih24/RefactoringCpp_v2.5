@@ -41,6 +41,8 @@ public:
 
 	void CreateConstructor();
 
+	void CreateConstructor(std::string className);
+
 	void UpdateClass();
 
 	void UpdateFields();

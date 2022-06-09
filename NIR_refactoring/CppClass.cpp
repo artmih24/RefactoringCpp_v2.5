@@ -272,7 +272,8 @@ void CppClass::GetFields() {
 				if (fieldName == "\n" || 
 					fieldName == "," || 
 					fieldName == ";" || 
-					fieldName == "(" || 
+					fieldName == "(" ||
+					fieldName == "class" ||
 					fieldName == name)
 					break;
 				j = k;
@@ -493,6 +494,48 @@ void CppClass::CreateConstructor() {
 			newConstructor.tokens.push_back(field.name);
 			newConstructor.tokens.push_back("=");
 			newConstructor.tokens.push_back(field.name);
+			newConstructor.tokens.push_back(";");
+			newConstructor.tokens.push_back("\n");
+		}
+		newConstructor.tokens.push_back("}");
+		newConstructor.tokens.push_back("\n");
+		this->constructors.push_back(newConstructor);
+	}
+}
+
+void CppClass::CreateConstructor(std::string className) {
+	if (this->constructors.size() == 0) {
+		CppClassConstructor newConstructor = {};
+		newConstructor.accessMode = AccessMode::Public;
+		newConstructor.parameters = {};
+		for (CppClassField field : fields) {
+			Parameter newParameter = Parameter(field.type, field.name);
+			newConstructor.parameters.push_back(newParameter);
+		}
+		newConstructor.tokens = {};
+		newConstructor.tokens.push_back(name);
+		newConstructor.tokens.push_back("(");
+		for (Parameter parameter : newConstructor.parameters) {
+			newConstructor.tokens.push_back(parameter.type);
+			newConstructor.tokens.push_back(parameter.name);
+			newConstructor.tokens.push_back(",");
+		}
+		newConstructor.tokens.pop_back();
+		newConstructor.tokens.push_back(")");
+		newConstructor.tokens.push_back("{");
+		newConstructor.tokens.push_back("\n");
+		for (CppClassField field : fields) {
+			newConstructor.tokens.push_back("this->");
+			newConstructor.tokens.push_back(field.name);
+			newConstructor.tokens.push_back("=");
+			if (field.type == className) {
+				newConstructor.tokens.push_back(className);
+				newConstructor.tokens.push_back("(");
+				newConstructor.tokens.push_back(field.name);
+				newConstructor.tokens.push_back(")");
+			}
+			else
+				newConstructor.tokens.push_back(field.name);
 			newConstructor.tokens.push_back(";");
 			newConstructor.tokens.push_back("\n");
 		}

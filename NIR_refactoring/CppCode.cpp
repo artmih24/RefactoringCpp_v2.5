@@ -69,7 +69,7 @@ std::vector<std::string> CppCode::GetStdTypes() {
         "long double",
         "size_t", "uintptr_t",
         "ptrdiff_t", "intptr_t",
-        "std::byte",
+        "byte",
         "string",
         "void",
         "auto"
@@ -102,32 +102,36 @@ std::string CppCode::Modify() {
         if (((modCode[i + 1] == '<') || (modCode[i + 1] == '>')) &&
             (modCode[i + 2] == modCode[i + 1]) && (i < (modCode.length() - 2)))
             modCode.insert((i += 2), " ");
-        if (modCode[i] == '\n')
-            modCode.insert(++i, " ₴₽₽. ");
-        if (modCode[i] == '\t')
-            modCode.insert(++i, " ₴₽₴₽. ");
     }
     return modCode;
 }
+
 
 /// <summary>Разбиение кода на токены</summary>
 std::vector<std::string> CppCode::GetTokens() {
     setlocale(LC_ALL, "Russian");
     std::vector<std::string> tokens = {};
     const char* separators = " \n\t";
-    std::string modCppCode = this->Modify();
-    std::istringstream ssCppCode(modCppCode + " ₽₴.");
-    while (1) {
-        std::string token = "";
-        ssCppCode >> token;
-        if (token == "₽₴.")
-            break;
-        else if (token == "₴₽₽.")
-            tokens.push_back("\n");
-        else if (token == "₴₽₴₽.")
+    std::string modCppCode = this->Modify(),
+        lineCppCode,
+        lineCppCodeToTab;
+    std::istringstream ssCppCode(modCppCode),
+        ssLineCppCode,
+        ssLineCppCodeToTab;
+    while (getline(ssCppCode, lineCppCode, '\n')) {
+        ssLineCppCode = std::istringstream(lineCppCode);
+        while (getline(ssLineCppCode, lineCppCodeToTab, '\t')) {
+            ssLineCppCodeToTab = std::istringstream(lineCppCodeToTab);
+            while (1) {
+                std::string token = "";
+                ssLineCppCodeToTab >> token;
+                if (token == "")
+                    break;
+                tokens.push_back(token);
+            }
             tokens.push_back("\t");
-        else if (token != "")
-            tokens.push_back(token);
+        }
+        tokens.push_back("\n");
     }
     return tokens;
 }

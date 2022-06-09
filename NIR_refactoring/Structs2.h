@@ -6,8 +6,8 @@ struct Parameter {
     std::string type,           // тип значения
                 name,           // название переменной
                 defaultValue;   // значение по умолчанию
-    bool pointer,       // передается ли указатель
-         reference;     // передается ли переменая по ссылке
+    bool pointer,               // передается ли указатель
+         reference;             // передается ли переменая по ссылке
 
     Parameter(std::string type, std::string name) {
         this->type = type;

@@ -6,9 +6,12 @@
 /// <param name="filePath">- путь к файлу с исходным кодом</param>
 RefactoringManager::RefactoringManager(std::string filePath) {
     this->filePath = filePath;
+    setlocale(LC_ALL, "Russian");
+    std::cout << "\nЗапущена процедура рефакторинга" << std::endl;
+    std::cout << "Исходный файл: " << this->filePath << std::endl;
     this->outFilePath = this->GetOutputFileName(this->filePath);
     this->fileStream = std::ifstream(this->filePath);
-    std::cout << this->outFilePath << std::endl;
+    std::cout << "Отредактированный файл будет назван: " << this->outFilePath << std::endl;
 }
 
 /// <summary>Проведение рефакторинга</summary>
@@ -21,6 +24,7 @@ void RefactoringManager::Refactoring() {
     this->ExtractClassProc(this->code);
     this->fileContent = this->code.ToString();
     WriteFile(this->outFilePath);
+    std::cout << "Процедура рефакторинга завершена" << std::endl;
 }
 
 /// <summary>Проведение рефакторинга методом удаления присваиваний параметрам</summary>
@@ -386,6 +390,7 @@ void RefactoringManager::ExtractClassProc(CppCode code) {
 }
 
 CppClasses RefactoringManager::ExtractClass(CppClass cppClass, std::vector<int> methodsNums) {
+    // создание нового класса и изменение исходного
     std::vector<CppClassMethod> methods = cppClass.methods,
         oldClassMethodsFin = {},
         newClassMethodsFin = {},
@@ -474,6 +479,7 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, std::vector<int> 
         newClass.CreateConstructor();
     newClass.destructor = newClassDestructor;
     newClass.tokens = newClass.ToTokens();
+    // создание вызова конструктора объекта нового класса
     std::vector<std::string> tokens = code.tokens,
         newTokens = {};
     for (int i = 0; i < tokens.size(); i++) {
@@ -563,6 +569,7 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, std::vector<int> 
     }
     tokens = newTokens;
     newTokens = {};
+    // изменение вызова метода, перемещенного в новый класс
     std::vector<std::string> objects = {},
         classes = {};
     std::vector<CppClass> cppClasses = {};
@@ -622,6 +629,190 @@ CppClasses RefactoringManager::ExtractClass(CppClass cppClass, std::vector<int> 
                 }
             }
             newTokens.push_back(otherObject + "." + fieldOrMethod);
+        }
+        else
+            newTokens.push_back(tokens[i]);
+    }
+    CppClasses result = CppClasses(oldClass, newClass, newTokens);
+    return result;
+}
+
+CppClasses RefactoringManager::ExtractClassV2(CppClass cppClass, std::vector<int> methodsNums) {
+    // создание нового класса и изменение исходного
+    std::vector<CppClassMethod> methods = cppClass.methods,
+        oldClassMethodsFin = {},
+        newClassMethodsFin = {},
+        oldClassMethods = {},
+        newClassMethods = {};
+    std::vector<CppClassField> fields = cppClass.fields,
+        oldClassFieldsFin = {},
+        newClassFieldsFin = {},
+        oldClassFields = {},
+        newClassFields = {};
+    std::vector<CppClassConstructor> constructors = cppClass.constructors,
+        oldClassConstructorsFin = {},
+        newClassConstructorsFin = {},
+        oldClassConstructors = {},
+        newClassConstructors = {};
+    CppClassDestructor destructor = cppClass.destructor,
+        oldClassDestructor = {},
+        newClassDestructor = {};
+    CppClassGraph classGraph = cppClass.classGraph;
+    CppClass oldClass = {},
+        newClass = {};
+    newClass.name = "New_" + cppClass.name;
+    int ind = 0;
+    bool flag = false;
+    for (int i = fields.size(); i < methods.size() + fields.size(); i++) {
+        int ii = i - fields.size();
+        for (int methodNum : methodsNums)
+            if (i != methodNum) {
+                newClassMethods.push_back(methods[ii]);
+                for (int j = 0; j < classGraph.totalSize; j++)
+                    if (classGraph.cppClassGraph[i][j]) {
+                        if (j >= 0 && j < classGraph.fieldsSize)
+                            newClassFields.push_back(fields[j]);
+                        else {
+                            ind = j - classGraph.fieldsSize;
+                            if (ind >= 0 && ind < classGraph.methodsSize)
+                                newClassMethods.push_back(methods[ind]);
+                            else {
+                                ind -= classGraph.methodsSize;
+                                if (ind >= 0 && ind < classGraph.constructorsSize)
+                                    newClassConstructors.push_back(constructors[ind]);
+                                else if (ind >= classGraph.constructorsSize)
+                                    newClassDestructor = destructor;
+                            }
+                        }
+                    }
+            }
+            else {
+                oldClassMethods.push_back(methods[ii]);
+                for (int j = 0; j < classGraph.totalSize; j++)
+                    if (classGraph.cppClassGraph[i][j]) {
+                        if (j >= 0 && j < classGraph.fieldsSize)
+                            oldClassFields.push_back(fields[j]);
+                        else {
+                            ind = j - classGraph.fieldsSize;
+                            if (ind >= 0 && ind < classGraph.methodsSize)
+                                oldClassMethods.push_back(methods[ind]);
+                            else {
+                                ind -= classGraph.methodsSize;
+                                if (ind >= 0 && ind < classGraph.constructorsSize)
+                                    oldClassConstructors.push_back(constructors[ind]);
+                                else if (ind >= classGraph.constructorsSize)
+                                    oldClassDestructor = destructor;
+                            }
+                        }
+                    }
+                    else {
+                        if (j >= 0 && j < classGraph.fieldsSize) {
+                            CppClassField newField = fields[j];
+                            newField.type = newClass.name;
+                            newField.name = "Obj_" + newField.name;
+                            oldClassFields.push_back(newField);
+                            flag = true;
+                        }
+                    }
+            }
+    }
+    oldClassFieldsFin.assign(oldClassFields.begin(), oldClassFields.end());
+    oldClass.fields = oldClassFieldsFin;
+    oldClassMethodsFin.assign(oldClassMethods.begin(), oldClassMethods.end());
+    oldClass.methods = oldClassMethodsFin;
+    oldClass.name = cppClass.name;
+    oldClassConstructorsFin.assign(oldClassConstructors.begin(), oldClassConstructors.end());
+    oldClass.constructors = oldClassConstructorsFin;
+    if (oldClass.constructors.size() == 0) {
+        if (flag)
+            oldClass.CreateConstructor(newClass.name);
+        else
+            oldClass.CreateConstructor();
+    }
+    oldClass.destructor = oldClassDestructor;
+    oldClass.tokens = oldClass.ToTokens();
+    newClassFieldsFin.assign(newClassFields.begin(), newClassFields.end());
+    newClass.fields = newClassFieldsFin;
+    newClassMethodsFin.assign(newClassMethods.begin(), newClassMethods.end());
+    newClass.methods = newClassMethodsFin;
+    newClass.name = "New_" + cppClass.name;
+    newClassConstructorsFin.assign(newClassConstructors.begin(), newClassConstructors.end());
+    newClass.constructors = newClassConstructorsFin;
+    if (newClass.constructors.size() == 0)
+        newClass.CreateConstructor();
+    newClass.destructor = newClassDestructor;
+    newClass.tokens = newClass.ToTokens();
+    std::vector<std::string> tokens = code.tokens,
+        newTokens = {};
+    // изменение вызова метода, перемещенного в новый класс
+    std::vector<std::string> objects = {},
+        classes = {};
+    std::vector<CppClass> cppClasses = {};
+    cppClasses.push_back(oldClass);
+    cppClasses.push_back(newClass);
+    for (int i = 0; i < tokens.size(); i++) {
+        for (CppClass cppClass : cppClasses) {
+            if (tokens[i] == cppClass.name &&
+                tokens[i + 1] != "{" &&
+                tokens[i + 1] != "(") {
+                objects.push_back(tokens[i + 1]);
+                classes.push_back(tokens[i]);
+                break;
+            }
+        }
+    }
+    for (int i = 0; i < tokens.size(); i++) {
+        std::string className = "",
+            objectName = "",
+            fieldOrMethod = "";
+        bool flag = false,
+            flag2 = false;
+        for (int l = 0; l < objects.size(); l++) {
+            if (tokens[i].substr(0, objects[l].size() + 1) == objects[l] + ".") {
+                className = classes[l];
+                objectName = objects[l];
+                fieldOrMethod = tokens[i].substr(objects[l].size() + 1, tokens[i].size() - 1);
+                CppClass thisClass = {};
+                for (CppClass cppClass : cppClasses) {
+                    if (cppClass.name == className) {
+                        thisClass = cppClass;
+                        break;
+                    }
+                }
+                for (CppClassField field : thisClass.fields) {
+                    if (field.name == fieldOrMethod) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (!flag) {
+                    for (CppClassMethod method : thisClass.methods) {
+                        if (method.name == fieldOrMethod) {
+                            flag2 = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (!flag && !flag2 && className != "") {
+            std::string otherClass = "",
+                otherObject = "",
+                fieldName = "";
+            for (int m = 0; m < classes.size(); m++) {
+                if (classes[m] != className) {
+                    otherClass = classes[m];
+                    otherObject = objects[m];
+                    break;
+                }
+            }
+            for (int n = 0; n = oldClass.fields.size(); n++) {
+                if (oldClass.fields[n].type == newClass.name) {
+                    fieldName = oldClass.fields[n].name;
+                    break;
+                }
+            }
+            newTokens.push_back(objectName + "." + fieldName + "." + fieldOrMethod);
         }
         else
             newTokens.push_back(tokens[i]);
@@ -700,8 +891,3 @@ void RefactoringManager::WriteFile(std::string filePath) {
     }
     this->outFileStream.close();
 }
-
-//void RefactoringManager::FormatFile(string filePath) {
-//    Formatter formatter;
-//    char* textIn = formatter.GetText(filePath);
-//}
